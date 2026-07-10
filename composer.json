@@ -16,7 +16,7 @@
     },
     "require-dev": {
         "interaction-design-foundation/coding-standard": "1.x-dev",
-        "phpunit/phpunit": "^13.2"
+        "phpunit/phpunit": "^12.5 || ^13.2"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
