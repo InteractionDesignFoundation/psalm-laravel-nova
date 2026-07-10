@@ -24,14 +24,6 @@ Then enable it:
 vendor/bin/psalm-plugin enable interaction-design-foundation/psalm-laravel-nova
 ```
 
-Or register it manually in `psalm.xml`:
-
-```xml
-<plugins>
-    <pluginClass class="InteractionDesignFoundation\PsalmLaravelNova\Plugin"/>
-</plugins>
-```
-
 Keep [`psalm/plugin-laravel`](https://github.com/psalm/psalm-plugin-laravel) installed and enabled alongside it: this plugin handles Nova-specific conventions and relies on the Laravel plugin for everything else (Eloquent models, facades, container bindings).
 
 ## What it does
@@ -75,7 +67,7 @@ The stubs are registered by the plugin itself; no `<stubs>` entry is needed in `
 
 ## Requirements
 
-- PHP 8.3+
+- PHP 8.4+
 - Psalm 7.0+
 
 `laravel/nova` is not a dependency: the plugin relies on its own stubs and resolves everything else from the analysed codebase.

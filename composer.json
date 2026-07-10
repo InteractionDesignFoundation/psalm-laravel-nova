@@ -11,12 +11,12 @@
         "nova"
     ],
     "require": {
-        "php": "^8.3",
-        "vimeo/psalm": "^7.0.0-beta18 || dev-master"
+        "php": "^8.4",
+        "vimeo/psalm": "^7.0.0-beta19 || dev-master"
     },
     "require-dev": {
         "interaction-design-foundation/coding-standard": "1.x-dev",
-        "phpunit/phpunit": "^11.0 || ^12.0"
+        "phpunit/phpunit": "^13.2"
     },
     "minimum-stability": "dev",
     "prefer-stable": true,
