@@ -77,7 +77,8 @@ The stubs are registered by the plugin itself; no `<stubs>` entry is needed in `
 Pull requests are welcome. Run the checks before opening one:
 
 ```bash
-composer cs:check
+composer cs:check   # php-cs-fixer (formatting) + phpcs (structure)
+composer cs:fix     # auto-fix both
 composer psalm
 ```
 
