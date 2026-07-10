@@ -1,0 +1,51 @@
+{
+    "name": "interaction-design-foundation/psalm-laravel-nova",
+    "description": "Psalm plugin for Laravel Nova",
+    "license": "MIT",
+    "type": "psalm-plugin",
+    "keywords": [
+        "psalm",
+        "psalm-plugin",
+        "static analysis",
+        "laravel",
+        "nova"
+    ],
+    "require": {
+        "php": "^8.3",
+        "vimeo/psalm": "^7.0.0-beta18 || dev-master"
+    },
+    "require-dev": {
+        "interaction-design-foundation/coding-standard": "1.x-dev",
+        "phpunit/phpunit": "^11.0 || ^12.0"
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true,
+    "autoload": {
+        "psr-4": {
+            "InteractionDesignFoundation\\PsalmLaravelNova\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "InteractionDesignFoundation\\PsalmLaravelNova\\Tests\\": "tests/"
+        }
+    },
+    "config": {
+        "allow-plugins": {
+            "dealerdirect/phpcodesniffer-composer-installer": true
+        },
+        "sort-packages": true
+    },
+    "extra": {
+        "psalm": {
+            "pluginClass": "InteractionDesignFoundation\\PsalmLaravelNova\\Plugin"
+        }
+    },
+    "scripts": {
+        "cs:check": "phpcs --report=full --report-summary",
+        "cs:fix": "phpcbf -p --colors",
+        "cs": "@cs:fix",
+        "psalm": "psalm --no-cache",
+        "test": "phpunit --colors=always"
+    }
+}

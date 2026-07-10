@@ -1,0 +1,15 @@
+/vendor
+composer.phar
+composer.lock
+auth.json
+
+phpunit.xml
+.phpunit.result.cache
+.phpunit.cache
+
+.php-cs-fixer.cache
+.phpcs-cache
+
+/.cache
+
+.idea

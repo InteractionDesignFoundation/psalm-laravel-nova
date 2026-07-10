@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<ruleset name="IxDF Package Standard">
+    <!-- Include all rules from the IxDF Coding Standard -->
+    <rule ref="IxDFCodingStandard">
+        <exclude ref="IxDFCodingStandard.Files.BemCasedFilename.InvalidCharacters"/>
+        <exclude ref="SlevomatCodingStandard.Files.TypeNameMatchesFileName.NoMatchBetweenTypeNameAndFileName"/>
+    </rule>
+
+    <rule ref="Generic.Files.LineLength.TooLong">
+        <severity>1</severity><!-- Temp hide the warn -->
+    </rule>
+
+    <!-- Psalm plugin code walks ASTs and Psalm storages: branching is intrinsic to it. -->
+    <rule ref="SlevomatCodingStandard.Complexity.Cognitive">
+        <properties>
+            <property name="warningThreshold" value="20"/>
+            <property name="errorThreshold" value="20"/>
+        </properties>
+    </rule>
+
+    <!-- Paths to check -->
+    <file>src</file>
+</ruleset>

@@ -1,0 +1,37 @@
+name: Format (PHP)
+
+on:
+  push:
+    paths:
+      - '**.php'
+      - 'composer.json'
+      - 'phpcs.xml'
+      - '.github/workflows/format_php.yml'
+  pull_request:
+
+jobs:
+  format_php:
+    name: Format PHP
+    runs-on: ubuntu-latest
+    timeout-minutes: 7
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          coverage: none
+          tools: cs2pr
+
+      - name: Cache composer dependencies
+        uses: actions/cache@v5
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.json') }}
+
+      - name: Run composer install
+        run: composer install -n --prefer-dist
+
+      - name: Run PHP_CodeSniffer
+        run: vendor/bin/phpcs -q --no-colors --report=checkstyle | cs2pr

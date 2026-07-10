@@ -1,0 +1,19 @@
+<?php
+
+namespace Laravel\Nova\Metrics;
+
+/**
+ * Nova types `PartitionResult::colors()`'s `$colors` as `array<string, string>`, but a positional
+ * (int-keyed) `array<int, string>` is equally valid at runtime (`PartitionColors` keys by label or
+ * index). Widen to `array<array-key, string>` so both shapes are accepted.
+ */
+class PartitionResult implements \JsonSerializable
+{
+    use \Laravel\Nova\Metrics\RoundingPrecision;
+
+    /**
+     * @param array<array-key, string> $colors
+     * @return $this
+     */
+    public function colors(array $colors) {}
+}

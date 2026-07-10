@@ -1,0 +1,23 @@
+<?php
+
+namespace Laravel\Nova;
+
+/**
+ * Override the `@method annotation` that declares make($component) with only 1 param,
+ * conflicting with Field subclasses that accept 2-4 params.
+ *
+ * Note: NovaMakeSignatureHandler rewrites this pseudo-method post-populate, replacing the
+ * params with each class's own constructor params (falling back to this variadic shape).
+ * The annotation stays as documentation and as the storage entry the handler rewrites.
+ *
+ * @method static static make(mixed ...$arguments)
+ */
+abstract class Element implements \JsonSerializable
+{
+    use \Laravel\Nova\AuthorizedToSee;
+    use \Illuminate\Support\Traits\Macroable;
+    use \Laravel\Nova\Makeable;
+    use \Laravel\Nova\Metable;
+    use \Laravel\Nova\ProxiesCanSeeToGate;
+    use \Laravel\Nova\WithComponent;
+}

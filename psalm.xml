@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
+    findUnusedBaselineEntry="true"
+    findUnusedCode="false"
+    errorBaseline="psalm-baseline.xml"
+>
+    <projectFiles>
+        <directory name="src"/>
+        <ignoreFiles>
+            <directory name="vendor"/>
+        </ignoreFiles>
+    </projectFiles>
+
+    <issueHandlers>
+        <!-- Psalm exposes no public API for reading/mutating class-like storage, which is what this
+             plugin exists to do. Every Psalm plugin that rewrites storage reaches into internals. -->
+        <InternalClass errorLevel="suppress"/>
+        <InternalMethod errorLevel="suppress"/>
+        <InternalProperty errorLevel="suppress"/>
+
+        <!-- Storage objects Psalm marks readonly are rewritten on purpose, before analysis starts. -->
+        <InaccessibleProperty errorLevel="suppress"/>
+
+        <!-- laravel/framework and laravel/nova are not dependencies: the plugin refers to their class
+             names as strings and in docblocks, and resolves them from the analysed codebase. -->
+        <UndefinedDocblockClass errorLevel="suppress"/>
+
+        <!-- Purity annotations only aid Psalm's taint analysis, which does not run over a plugin. -->
+        <MissingPureAnnotation errorLevel="suppress"/>
+    </issueHandlers>
+</psalm>

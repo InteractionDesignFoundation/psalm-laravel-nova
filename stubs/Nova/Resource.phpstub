@@ -1,0 +1,76 @@
+<?php
+
+namespace Laravel\Nova;
+
+/**
+ * Override the `@method annotation` that declares make($resource) with 1 required param,
+ * conflicting with Makeable::make(...$arguments) which accepts variadic args.
+ *
+ * Covariant so a `class-string<Resource<ConcreteModel>>` satisfies Nova APIs typed
+ * `array<int, class-string<Resource>>` (which Psalm expands to `Resource<Model>`).
+ * The writable `$resource` property below is technically an invariant position, but
+ * stubs are shallow-scanned and the read-mostly wrapper semantics make covariance
+ * the pragmatic choice here.
+ *
+ * @template-covariant TModel of \Illuminate\Database\Eloquent\Model
+ *
+ * @phpstan-type TFields \Illuminate\Http\Resources\MissingValue|\Laravel\Nova\Fields\Field|\Laravel\Nova\Panel|\Laravel\Nova\ResourceToolElement
+ *
+ * @mixin TModel
+ * @method static static make(mixed ...$arguments)
+ * @method mixed getKey()
+ */
+abstract class Resource implements \ArrayAccess, \JsonSerializable, \Illuminate\Contracts\Routing\UrlRoutable
+{
+    use \Laravel\Nova\Authorizable;
+    use \Illuminate\Http\Resources\ConditionallyLoadsAttributes;
+    use \Illuminate\Http\Resources\DelegatesToResource;
+    use \Laravel\Nova\FillsFields;
+    use \Laravel\Nova\HasLifecycleMethods;
+    use \Laravel\Nova\Makeable;
+    use \Laravel\Nova\PerformsQueries;
+    use \Laravel\Nova\PerformsValidation;
+    use \Laravel\Nova\ResolvesActions;
+    use \Laravel\Nova\ResolvesCards;
+    use \Laravel\Nova\ResolvesFields;
+    use \Laravel\Nova\ResolvesFilters;
+    use \Laravel\Nova\ResolvesLenses;
+    use \Laravel\Nova\SupportsPolling;
+
+    /**
+     * Nova convention read via reflection (`property_exists($resource, 'policy') &&
+     * ! is_null($resource::$policy)`), see Util::resolveResourceOrModelForAuthorization(),
+     * Nova::bootResources(), Nova::resourcesForNavigation(). Not declared on the real base
+     * class; declared here so subclass declarations are overrides and static fetches resolve.
+     *
+     * Typed plain `string` (not `class-string|null`): Psalm requires property types to be
+     * invariant, and subclasses conventionally declare the property natively as
+     * `public static string $policy = SomePolicy::class` — any wider or narrower type here
+     * would raise NonInvariantPropertyType on every such subclass. Native type rather than
+     * `@var`: docblock-only types on stub properties do not reliably reach property storage.
+     */
+    public static string $policy;
+
+    /**
+     * The real value is null until the resource is hydrated (the constructor accepts
+     * TModel|null). Typed non-null here so field closures don't need noise null-checks;
+     * the narrow window where it is actually null is Nova-internal.
+     *
+     * @var TModel
+     */
+    public $resource;
+
+    /** @param TModel|null $resource */
+    public function __construct($resource = null)
+    {
+        $this->resource = $resource;
+    }
+
+    /**
+     * Get the underlying model instance for the resource.
+     * @psalm-mutation-free
+     *
+     * @return TModel|null
+     */
+    public function model() {}
+}

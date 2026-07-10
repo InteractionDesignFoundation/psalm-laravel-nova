@@ -1,0 +1,40 @@
+<?php
+
+namespace Laravel\Nova;
+
+/**
+ * Nova types `Panel::__construct()`'s `$fields` as `(callable():TPanelFields)|TPanelFields`. Panel imports
+ * `TPanelFields` from `Tabs\TabsGroup`, which itself re-exports it (via `@phpstan-import-type`) from
+ * `Fields\FieldMergeValue` (`= iterable<int, Resource::TFields>`). Psalm leaves this re-exported alias
+ * opaque in the real Nova class graph, so even a plain `list<Field>` is rejected. (Adding the missing
+ * `@phpstan-type TFields` back to Resource.phpstub fixes the sibling `Tab::group` case, which imports a
+ * locally-defined alias, but not this re-exported one.) Redeclare the signatures with the fully expanded
+ * type so Psalm accepts field arrays and closures returning them.
+ *
+ * @phpstan-type TPanelFieldsResolved iterable<int, \Illuminate\Http\Resources\MissingValue|\Laravel\Nova\Fields\Field|\Laravel\Nova\Panel|\Laravel\Nova\ResourceToolElement>
+ *
+ * @method static static make(\Stringable|string $name, (callable():TPanelFieldsResolved)|TPanelFieldsResolved $fields = [], ?string $attribute = null)
+ */
+class Panel extends \Laravel\Nova\Fields\FieldMergeValue implements \JsonSerializable, \Stringable
+{
+    use \Laravel\Nova\Fields\Collapsable;
+    use \Laravel\Nova\Metrics\HasHelpText;
+    use \Illuminate\Support\Traits\Macroable;
+    use \Laravel\Nova\Makeable;
+    use \Laravel\Nova\Metable;
+    use \Illuminate\Support\Traits\Tappable;
+    use \Laravel\Nova\WithComponent;
+
+    /**
+     * @param \Stringable|string $name
+     * @param (callable():TPanelFieldsResolved)|TPanelFieldsResolved $fields
+     */
+    public function __construct($name, callable|iterable $fields = [], ?string $attribute = null) {}
+
+    /**
+     * @param \Stringable|string $name
+     * @param (callable():TPanelFieldsResolved)|TPanelFieldsResolved $fields
+     * @return static
+     */
+    public static function makeDefault($name, callable|iterable $fields = [], ?string $attribute = null) {}
+}

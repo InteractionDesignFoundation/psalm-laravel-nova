@@ -1,0 +1,150 @@
+<?php
+
+namespace Laravel\Nova\Actions;
+
+use Laravel\Nova\Http\Requests\NovaRequest;
+
+/** @see https://github.com/laravel/nova-issues/issues/6036 */
+class Action implements \JsonSerializable
+{
+    use \Laravel\Nova\AuthorizedToSee;
+    use \Illuminate\Support\Traits\Macroable;
+    use \Laravel\Nova\Makeable;
+    use \Laravel\Nova\Metable;
+    use \Laravel\Nova\ProxiesCanSeeToGate;
+    use \Illuminate\Support\Traits\Tappable;
+    use \Laravel\Nova\WithComponent;
+
+    /**
+     * Get the fields displayed by the resource.
+     *
+     * @return list<\Laravel\Nova\Fields\Field|\Laravel\Nova\Panel>
+     */
+    public function fields(NovaRequest $request): array
+    {
+        return [];
+    }
+
+    /**
+     * Return a dangerous message response from the action.
+     *
+     * @param string $name
+     * @param string|null $message
+     * @psalm-return (func_num_args() is 2
+     *  ? static
+     *  : \Laravel\Nova\Actions\ActionResponse
+     * )
+     */
+    public static function danger($name, string $message = null)
+    {
+    }
+
+    /**
+     * Return a delete response from the action.
+     *
+     * @return \Laravel\Nova\Actions\ActionResponse
+     */
+    public static function deleted()
+    {
+    }
+
+    /**
+     * Return a redirect response from the action.
+     *
+     * @param string $name
+     * @param string|null $url
+     * @psalm-return (func_num_args() is 2
+     *  ? static
+     *  : \Laravel\Nova\Actions\ActionResponse
+     * )
+     */
+    public static function redirect($name, $url = null)
+    {
+    }
+
+    /**
+     * Return a Inertia visit from the action.
+     * @deprecated Use "visit"
+     *
+     * @param string $name
+     * @param string $path
+     * @param array<string, mixed> $options
+     * @psalm-return (func_num_args() is 3
+     *  ? static
+     *  : \Laravel\Nova\Actions\ActionResponse
+     * )
+     */
+    public static function push($name, $path, $options = [])
+    {
+    }
+
+    /**
+     * Return a Inertia visit from the action.
+     *
+     * @param string $name
+     * @param string|array<string, mixed> $path
+     * @param array<string, mixed> $options
+     * @psalm-return (func_num_args() is 3
+     *  ? static
+     *  : \Laravel\Nova\Actions\ActionResponse
+     * )
+     */
+    public static function visit($name, $path = [], $options = [])
+    {
+    }
+
+    /**
+     * Return an open in new tab response from the action.
+     *
+     * @param string $name
+     * @param string|null $url
+     * @psalm-return (func_num_args() is 2
+     *  ? static
+     *  : \Laravel\Nova\Actions\ActionResponse
+     * )
+     */
+    public static function openInNewTab($name, $url = null)
+    {
+    }
+
+    /**
+     * Return a download response from the action.
+     * @deprecated Use "downloadURL"
+     *
+     * @param string $name
+     * @param string $url
+     * @return \Laravel\Nova\Actions\ActionResponse
+     */
+    public static function download($url, $name)
+    {
+    }
+
+    /**
+     * Return a download response from the action.
+     *
+     * @param string $name
+     * @param string $url
+     * @psalm-return (func_num_args() is 2
+     *  ? static
+     *  : \Laravel\Nova\Actions\ActionResponse
+     * )
+     */
+    public static function downloadURL($name, $url)
+    {
+    }
+
+    /**
+     * Return an action modal response from the action.
+     *
+     * @param string $name
+     * @param string|array<string, mixed> $modal
+     * @param array<string, mixed> $data
+     * @psalm-return (func_num_args() is 3
+     *  ? static
+     *  : \Laravel\Nova\Actions\ActionResponse
+     * )
+     */
+    public static function modal($name, $modal = [], $data = [])
+    {
+    }
+}

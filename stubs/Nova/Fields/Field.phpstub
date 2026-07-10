@@ -1,0 +1,26 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * @phpstan-type TFieldValidationRules \Stringable|string|\Illuminate\Contracts\Validation\ValidationRule|\Illuminate\Contracts\Validation\Rule|\Illuminate\Contracts\Validation\InvokableRule|(callable(string, mixed, \Closure):(void))
+ * @phpstan-type TValidationRules array<int, TFieldValidationRules>|TFieldValidationRules
+ *
+ * Note: the make() params below are superseded at analysis time: NovaMakeSignatureHandler
+ * rewrites every makeable class's pseudo make() from its own constructor params post-populate.
+ * The annotation stays as documentation and as a fallback should the handler be disabled.
+ *
+ * @method static static make(\Stringable|string $name, string|callable|object|null $attribute = null, callable|null $resolveCallback = null)
+ */
+abstract class Field extends \Laravel\Nova\Fields\FieldElement implements \JsonSerializable, \Laravel\Nova\Contracts\Resolvable
+{
+    use \Illuminate\Support\Traits\Conditionable;
+    use \Laravel\Nova\Fields\DependentFields;
+    use \Laravel\Nova\Fields\HandlesValidation;
+    use \Laravel\Nova\Metrics\HasHelpText;
+    use \Laravel\Nova\Fields\MutableFields;
+    use \Laravel\Nova\Fields\PeekableFields;
+    use \Laravel\Nova\Fields\PreviewableFields;
+    use \Laravel\Nova\Fields\SupportsFullWidthFields;
+    use \Illuminate\Support\Traits\Tappable;
+}
