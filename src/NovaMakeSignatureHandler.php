@@ -124,8 +124,8 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
      * so a bucket entry here may be shared with dozens of other classes. Never mutate the found
      * object in place (the last-processed class's params would win globally): clone it, rewrite
      * the clone, and assign it back to THIS class's bucket only.
-     * @param array<lowercase-string, MethodStorage> $bucket `pseudo_methods` or `pseudo_static_methods`, modified in place
-     * @param list<FunctionLikeParameter> $sourceParams
+     * @param array<lowercase-string, \Psalm\Storage\MethodStorage> $bucket `pseudo_methods` or `pseudo_static_methods`, modified in place
+     * @param list<\Psalm\Storage\FunctionLikeParameter> $sourceParams
      */
     private static function rewriteBucketMake(array &$bucket, array $sourceParams, bool $variadic): void
     {
