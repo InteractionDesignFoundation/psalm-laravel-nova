@@ -4,7 +4,7 @@
 [![Total Downloads](https://img.shields.io/packagist/dt/interaction-design-foundation/psalm-laravel-nova.svg)](https://packagist.org/packages/interaction-design-foundation/psalm-laravel-nova)
 [![License](https://img.shields.io/packagist/l/interaction-design-foundation/psalm-laravel-nova.svg)](LICENSE)
 
-A [Psalm](https://psalm.dev) plugin that teaches Psalm about [Laravel Nova](https://nova.laravel.com) conventions.
+A [Psalm](https://psalm.dev) plugin that resolves [Laravel Nova](https://nova.laravel.com)'s magic: the reflective dispatch and `@method` annotations that static analysis cannot follow on its own.
 
 > This plugin covers Nova only. Install it **in addition to** [`psalm/plugin-laravel`](https://github.com/psalm/psalm-plugin-laravel), which covers the Laravel framework itself. It is not a replacement.
 
