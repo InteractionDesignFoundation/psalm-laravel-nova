@@ -78,35 +78,30 @@ final class StaticClassPropertyResolver
      * Resolve a `SomeClass::class` default expression to its fully qualified class name. Returns null
      * for any other expression shape (constant, string literal, null default, …).
      * @return class-string|null
+     * @psalm-mutation-free
      */
     private static function resolveClassConstFetch(?Expr $expr): ?string
     {
+        // resolve() ran php-parser's NameResolver with node replacement on this tree, so every
+        // statically resolvable class name is already a FullyQualified node here. Anything else
+        // (`self::class`, `static::class`, dynamic `$class::class`, …) is not resolvable to a
+        // single FQCN — decline.
         if (!$expr instanceof ClassConstFetch
             || !$expr->name instanceof Identifier
             || $expr->name->name !== 'class'
-            || !$expr->class instanceof Name
+            || !$expr->class instanceof Name\FullyQualified
         ) {
             return null;
         }
 
-        $resolvedNameAttribute = $expr->class->getAttribute('resolvedName');
-        if ($resolvedNameAttribute instanceof Name) {
-            $resolvedName = $resolvedNameAttribute->toString();
-        } else {
-            // Psalm's name resolution pass only sets 'resolvedName' for non-fully-qualified names.
-            // A literal `\App\X::class` reference is already fully qualified, so fall back to it.
-            $resolvedName = $expr->class instanceof Name\FullyQualified ? $expr->class->toString() : null;
-        }
-
-        if (!\is_string($resolvedName) || $resolvedName === '') {
-            return null;
-        }
-
         /** @var class-string */
-        return $resolvedName;
+        return $expr->class->toString();
     }
 
-    /** @param list<\PhpParser\Node\Stmt> $stmts */
+    /**
+     * @param list<\PhpParser\Node\Stmt> $stmts
+     * @psalm-mutation-free
+     */
     private static function findClassNode(array $stmts, string $fqcn): ?Stmt\ClassLike
     {
         foreach ($stmts as $stmt) {
@@ -119,11 +114,10 @@ final class StaticClassPropertyResolver
                 continue;
             }
 
-            if ($stmt instanceof Stmt\ClassLike) {
-                $namespacedName = $stmt->getAttribute('namespacedName');
-                if ($namespacedName instanceof Name && $namespacedName->toString() === $fqcn) {
-                    return $stmt;
-                }
+            // NameResolver (run by resolve()) populates the typed `namespacedName` property on
+            // every named ClassLike declaration; it stays null on anonymous classes.
+            if ($stmt instanceof Stmt\ClassLike && $stmt->namespacedName?->toString() === $fqcn) {
+                return $stmt;
             }
         }
 

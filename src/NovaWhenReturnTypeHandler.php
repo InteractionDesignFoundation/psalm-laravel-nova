@@ -38,6 +38,7 @@ final class NovaWhenReturnTypeHandler implements MethodReturnTypeProviderInterfa
 {
     private const MISSING_VALUE = 'Illuminate\Http\Resources\MissingValue';
 
+    /** @psalm-pure */
     #[\Override]
     public static function getClassLikeNames(): array
     {
@@ -55,7 +56,7 @@ final class NovaWhenReturnTypeHandler implements MethodReturnTypeProviderInterfa
         }
 
         $args = $event->getCallArgs();
-        if (!isset($args[1])) { // when($condition, $value, $default = new MissingValue)
+        if (!isset($args[0], $args[1])) { // when($condition, $value, $default = new MissingValue)
             return null;
         }
 
@@ -107,14 +108,15 @@ final class NovaWhenReturnTypeHandler implements MethodReturnTypeProviderInterfa
     /**
      * Unwrap atomics to what when()'s `value()` pass produces at runtime. `value()` invokes
      * `instanceof Closure` ONLY, so:
-     *  - TClosure: replaced by its return-type atomics (invoked for certain);
-     *  - TCallable: kept AND its return-type atomics are added — a value typed `callable` may be
-     *    a Closure instance (invoked) or a callable-string/array (passed through unchanged), so
-     *    the union of both outcomes is the only sound answer;
-     *  - anything else: kept as-is.
+     * - TClosure: replaced by its return-type atomics (invoked for certain);
+     * - TCallable: kept AND its return-type atomics are added — a value typed `callable` may be
+     * a Closure instance (invoked) or a callable-string/array (passed through unchanged), so
+     * the union of both outcomes is the only sound answer;
+     * - anything else: kept as-is.
      * Returns null when an invocable atomic's return type is unresolvable — the caller must
      * decline entirely rather than guess.
      * @return non-empty-list<\Psalm\Type\Atomic>|null
+     * @psalm-mutation-free
      */
     private static function unwrapEvaluatedAtomics(Union $type): ?array
     {

@@ -7,7 +7,6 @@
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     findUnusedBaselineEntry="true"
     findUnusedCode="false"
-    errorBaseline="psalm-baseline.xml"
 >
     <projectFiles>
         <directory name="src"/>
@@ -29,8 +28,5 @@
         <!-- laravel/framework and laravel/nova are not dependencies: the plugin refers to their class
              names as strings and in docblocks, and resolves them from the analysed codebase. -->
         <UndefinedDocblockClass errorLevel="suppress"/>
-
-        <!-- Purity annotations only aid Psalm's taint analysis, which does not run over a plugin. -->
-        <MissingPureAnnotation errorLevel="suppress"/>
     </issueHandlers>
 </psalm>

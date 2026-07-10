@@ -75,8 +75,9 @@ final class NovaQueryBuilderParamNarrower
     /**
      * Resolve the concrete model from the class's `@extends $templateHolder<ConcreteModel>` binding.
      * Returns null when no binding resolves to a Model subclass (bare Model is treated as no binding).
-     * @param class-string $templateHolder base class whose TModel binding carries the model
+     * @param non-empty-string $templateHolder FQCN of the base class whose TModel binding carries the model
      * @return class-string<\Illuminate\Database\Eloquent\Model>|null
+     * @psalm-mutation-free
      */
     public static function resolveTemplateModel(ClassLikeStorage $storage, string $templateHolder): ?string
     {
@@ -95,7 +96,10 @@ final class NovaQueryBuilderParamNarrower
         return null;
     }
 
-    /** An un-parameterized contract or Eloquent builder param: safe to rewrite to Builder<Model>. */
+    /**
+     * An un-parameterized contract or Eloquent builder param: safe to rewrite to Builder<Model>.
+     * @psalm-mutation-free
+     */
     private static function isBareBuilderParam(?Union $type): bool
     {
         if (!$type instanceof Union) {
@@ -123,7 +127,10 @@ final class NovaQueryBuilderParamNarrower
         return false;
     }
 
-    /** An already-parameterized `Builder<SomeModel>` param: user-narrowed, only needs the suppression. */
+    /**
+     * An already-parameterized `Builder<SomeModel>` param: user-narrowed, only needs the suppression.
+     * @psalm-mutation-free
+     */
     private static function isGenericBuilderParam(?Union $type): bool
     {
         if (!$type instanceof Union) {
@@ -142,6 +149,7 @@ final class NovaQueryBuilderParamNarrower
         return false;
     }
 
+    /** @psalm-pure */
     private static function isBuilderName(string $fqcn): bool
     {
         $value = \mb_strtolower($fqcn);

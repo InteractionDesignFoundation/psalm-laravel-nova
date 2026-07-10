@@ -102,21 +102,11 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
 
             $hasOwnPseudoStaticMake = isset($storage->pseudo_static_methods[self::MAKE]);
 
-            // Psalm's populator copies pseudo-method MethodStorage objects to descendants BY
-            // REFERENCE, so a bucket entry here may be shared with dozens of other classes.
-            // Never mutate the found object in place (the last-processed class's params would
-            // win globally): clone it, rewrite the clone, and assign it back to THIS class's
-            // bucket only. The real `methods` bucket is deliberately not touched: the real
+            // The real `methods` bucket is deliberately not touched: the real
             // `Makeable::make(...$arguments)` is already correctly variadic, and pseudo entries
             // take precedence over it during static-call resolution anyway.
-            foreach (['pseudo_methods', 'pseudo_static_methods'] as $bucketName) {
-                $make = $storage->{$bucketName}[self::MAKE] ?? null;
-                if ($make instanceof MethodStorage) {
-                    $replacement = clone $make;
-                    self::applySignature($replacement, $sourceParams, $variadic);
-                    $storage->{$bucketName}[self::MAKE] = $replacement;
-                }
-            }
+            self::rewriteBucketMake($storage->pseudo_methods, $sourceParams, $variadic);
+            self::rewriteBucketMake($storage->pseudo_static_methods, $sourceParams, $variadic);
 
             if (!$hasOwnPseudoStaticMake) {
                 $template = self::resolveRootMakeTemplate($codebase, $storage, $rootsFlipped);
@@ -129,7 +119,30 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
         }
     }
 
-    /** @return array{list<\Psalm\Storage\FunctionLikeParameter>, bool} Source params (to be cloned per target) and the variadic flag. */
+    /**
+     * Psalm's populator copies pseudo-method MethodStorage objects to descendants BY REFERENCE,
+     * so a bucket entry here may be shared with dozens of other classes. Never mutate the found
+     * object in place (the last-processed class's params would win globally): clone it, rewrite
+     * the clone, and assign it back to THIS class's bucket only.
+     * @param array<lowercase-string, MethodStorage> $bucket `pseudo_methods` or `pseudo_static_methods`, modified in place
+     * @param list<FunctionLikeParameter> $sourceParams
+     */
+    private static function rewriteBucketMake(array &$bucket, array $sourceParams, bool $variadic): void
+    {
+        $make = $bucket[self::MAKE] ?? null;
+        if ($make === null) {
+            return;
+        }
+
+        $replacement = clone $make;
+        self::applySignature($replacement, $sourceParams, $variadic);
+        $bucket[self::MAKE] = $replacement;
+    }
+
+    /**
+     * @return array{list<\Psalm\Storage\FunctionLikeParameter>, bool} Source params (to be cloned per target) and the variadic flag.
+     * @psalm-mutation-free
+     */
     private static function resolveMakeSignature(Codebase $codebase, ClassLikeStorage $storage): array
     {
         $constructor = self::resolveEffectiveConstructor($codebase, $storage);
@@ -141,7 +154,10 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
         return [$constructor->params, $constructor->variadic];
     }
 
-    /** A by-ref param can't be safely reproduced on a synthetic `static::make()` factory signature. */
+    /**
+     * A by-ref param can't be safely reproduced on a synthetic `static::make()` factory signature.
+     * @psalm-mutation-free
+     */
     private static function isSafeToMirror(MethodStorage $constructor): bool
     {
         foreach ($constructor->params as $param) {
@@ -153,7 +169,10 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
         return true;
     }
 
-    /** The class's own constructor, or — if it has none of its own — the one it inherits. */
+    /**
+     * The class's own constructor, or — if it has none of its own — the one it inherits.
+     * @psalm-mutation-free
+     */
     private static function resolveEffectiveConstructor(Codebase $codebase, ClassLikeStorage $storage): ?MethodStorage
     {
         $own = $storage->methods[self::CONSTRUCT] ?? null;
@@ -175,6 +194,7 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
      * A `make` MethodStorage to clone as a template for a class without its own (for its `cased_name`,
      * `is_static`, `static` return type, etc.) — taken from whichever makeable root backs this class.
      * @param array<lowercase-string, int> $rootsFlipped Hoisted `array_flip(self::MAKEABLE_ROOTS)`.
+     * @psalm-mutation-free
      */
     private static function resolveRootMakeTemplate(
         Codebase $codebase,
@@ -200,6 +220,7 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
         return null;
     }
 
+    /** @psalm-mutation-free */
     private static function findMakeStorage(ClassLikeStorage $storage): ?MethodStorage
     {
         return $storage->pseudo_static_methods[self::MAKE]
