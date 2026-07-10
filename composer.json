@@ -42,19 +42,15 @@
         }
     },
     "scripts": {
-        "cs:check": [
-            "@php-cs-fixer:dry",
-            "@phpcs"
-        ],
+        "cs": "@cs:fix",
         "cs:fix": [
             "@php-cs-fixer",
             "@phpcbf"
         ],
-        "phpcs": "phpcs -p -s --colors --report-full --report-summary",
-        "phpcbf": "phpcbf -p --colors",
         "php-cs-fixer": "php-cs-fixer fix --no-interaction --ansi --quiet",
-        "php-cs-fixer:dry": "php-cs-fixer fix --no-interaction --ansi --verbose --dry-run",
-        "psalm": "psalm --no-cache",
-        "test": "phpunit --colors=always"
+        "phpcbf": "phpcbf -p --colors",
+        "phpcs": "phpcs -p -s --colors --report-full --report-summary",
+        "psalm": "psalm",
+        "test": "phpunit"
     }
 }
