@@ -47,9 +47,16 @@ The property value is validated (it must exist and be a genuine `Model` subclass
 
 `Illuminate\Http\Resources\ConditionallyLoadsAttributes::when()` returns `mixed`, which degrades the inferred element type of every array literal built with it, including Nova's `fields()` and `actions()`. `NovaWhenReturnTypeHandler` introspects the argument and returns the closure's return type (or the value's type) unioned with `MissingValue`. A literal `true`/`false` condition drops the dead branch. When the type cannot be resolved, the provider declines rather than leaking a raw `Closure` into the union.
 
-### Convention members are not reported as unused
+### Reflectively dispatched members are not reported as unused
 
-Under `findUnusedCode="true"`, every convention property (`$model`, `$policy`, …) and hook method (`fields()`, `handle()`, …) looks unused, because Nova calls them reflectively. `NovaSuppressHandler` marks them as used on the Nova base classes, mirroring what `Psalm\LaravelPlugin\Handlers\SuppressHandler` does for Laravel.
+Under `findUnusedCode="true"`, members Nova reaches by reflection have no visible call site. `NovaSuppressHandler` covers the ones that stubs cannot express, mirroring what `Psalm\LaravelPlugin\Handlers\SuppressHandler` does for Laravel:
+
+- `PossiblyUnusedMethod` on an action's `handle()`, which Nova dispatches through `method_exists()` and the container rather than a base-class declaration;
+- `PossiblyUnusedMethod` on a resource's open-ended `relatable{FieldName}()` query methods;
+- `PossiblyUnusedMethod` on the Gate methods (`viewAny`, `view`, `create`, …) of the policy a resource names in `public static $policy`, which Nova reaches via `authorizedTo()` → `Gate::callPolicyMethod()`;
+- `NonInvariantPropertyType` on `$policy` itself, but only for declarations compatible with the stub's `string` — `public static int $policy` still raises.
+
+Hook methods that override a base declaration (`fields()`, `apply()`, `calculate()`, …) already inherit the parent's "used" status from the stubs, so they need no suppression.
 
 ### Nova stubs
 
