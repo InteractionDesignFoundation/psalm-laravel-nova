@@ -15,7 +15,7 @@
         "vimeo/psalm": "^7.0.0-beta19 || dev-master"
     },
     "require-dev": {
-        "interaction-design-foundation/coding-standard": "1.x-dev",
+        "interaction-design-foundation/coding-standard": "^1.0-RC1",
         "phpunit/phpunit": "^12.5 || ^13.2"
     },
     "minimum-stability": "dev",
