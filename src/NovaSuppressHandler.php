@@ -5,6 +5,7 @@ namespace InteractionDesignFoundation\PsalmLaravelNova;
 use InteractionDesignFoundation\PsalmLaravelNova\Support\StaticClassPropertyResolver;
 use Psalm\Codebase;
 use Psalm\Internal\Analyzer\ClassLikeAnalyzer;
+use Psalm\Internal\Provider\ClassLikeStorageProvider;
 use Psalm\Plugin\EventHandler\AfterCodebasePopulatedInterface;
 use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Storage\ClassLikeStorage;
@@ -73,11 +74,36 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
         'rundestructiveaction',
     ];
 
+    /**
+     * Nova convention properties declared on a base class via a `@var` docblock (or a native
+     * nullable) with no default: `Field::$name`, a metric's `$name`, a trend result's `$prefix`,
+     * etc. Nova assigns them through the constructor, a setter or reflection — never at
+     * declaration — so every concrete subclass that does not redeclare them is reported as
+     * PropertyNotSetInConstructor. Keyed by the FQCN the property is declared on (lowercased).
+     *
+     * Marking each as "initialized" on its declaring storage (see markFrameworkInitialised) is
+     * per-property precise: ClassAnalyzer reads the flag from the DECLARING class
+     * (Psalm\Internal\Analyzer\ClassAnalyzer::checkPropertyInitialization), so every subclass
+     * stops flagging that one property while a subclass's OWN uninitialised typed property still
+     * flags. No stub default value (which would be fiction — the runtime value is never that) and
+     * no class-level suppression (which would hide a subclass's real bugs) is needed.
+     */
+    private const FRAMEWORK_INITIALISED_PROPERTIES = [
+        'laravel\nova\fields\field' => ['name', 'attribute', 'resource', 'dependentShouldEmitChangesEvent'],
+        'laravel\nova\actions\action' => ['name'],
+        'laravel\nova\filters\filter' => ['name'],
+        'laravel\nova\lenses\lens' => ['name'],
+        'laravel\nova\metrics\metric' => ['name'],
+        'laravel\nova\metrics\trendresult' => ['prefix', 'suffix', 'format'],
+    ];
+
     #[\Override]
     public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
     {
         $codebase = $event->getCodebase();
         $provider = $codebase->classlike_storage_provider;
+
+        self::markFrameworkInitialised($provider);
 
         foreach ($provider::getAll() as $classStorage) {
             if (!$classStorage->user_defined || $classStorage->is_interface) {
@@ -136,6 +162,38 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
         // Untyped and no docblock: trust the declaration only when its initializer is a real
         // `SomePolicy::class` constant (the same AST read used for policy-method suppression).
         return StaticClassPropertyResolver::resolve($classStorage, $codebase, self::POLICY_PROPERTY) !== null;
+    }
+
+    /**
+     * Flag each Nova convention property as initialised on the class that declares it, so
+     * PropertyNotSetInConstructor is not raised on subclasses that inherit it without a redeclaration.
+     */
+    private static function markFrameworkInitialised(ClassLikeStorageProvider $provider): void
+    {
+        foreach (self::FRAMEWORK_INITIALISED_PROPERTIES as $baseClass => $propertyNames) {
+            if (!$provider->has($baseClass)) {
+                continue;
+            }
+
+            $baseStorage = $provider->get($baseClass);
+            foreach ($propertyNames as $propertyName) {
+                // A property pulled in from a trait is declared on the trait, not the class using
+                // it; resolve to the real declaring storage so the flag is read from the same place
+                // ClassAnalyzer looks it up.
+                $declaringClass = $baseStorage->declaring_property_ids[$propertyName] ?? $baseClass;
+                if (!$provider->has($declaringClass)) {
+                    continue;
+                }
+
+                self::markInitialised($provider->get($declaringClass), $propertyName);
+            }
+        }
+    }
+
+    /** Mutates the passed storage (kept separate so the side effect is on a parameter, not a call result). */
+    private static function markInitialised(ClassLikeStorage $classStorage, string $propertyName): void
+    {
+        $classStorage->initialized_properties[$propertyName] = true;
     }
 
     private static function suppressHookMethods(ClassLikeStorage $classStorage): void
