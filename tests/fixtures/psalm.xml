@@ -11,15 +11,9 @@
         <directory name="scenarios"/>
     </projectFiles>
 
-    <!-- The fake Laravel/Nova declarations stand in for vendor code. They are registered as stub
-         files (not project files) for two reasons: Psalm refuses stub files for class-likes inside
-         <projectFiles>, and stub files declared in the config are scanned before the ones a plugin
-         registers, so the plugin's stubs are the ones that win the override. -->
-    <stubs>
-        <file name="fake-nova/illuminate.php"/>
-        <file name="fake-nova/nova.php"/>
-        <file name="fake-nova/app.php"/>
-    </stubs>
+    <!-- Fake Nova reaches Psalm only via the composer classmap (autoload-dev), not <stubs>: config
+         <stubs> are scanned before a plugin's own addStubFile() stubs and always "win" there, which
+         previously masked a stub override that didn't actually work against normally-scanned code. -->
 
     <plugins>
         <pluginClass class="InteractionDesignFoundation\PsalmLaravelNova\Plugin"/>

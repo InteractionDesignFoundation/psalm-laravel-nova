@@ -15,6 +15,9 @@ namespace Laravel\Nova\Fields;
  * the pattern used in `FieldElement.phpstub`: Psalm infers `TBuilder` from the closure's own param type
  * instead of checking against a fixed union, so a closure typed against either concrete class still
  * narrows correctly, while a genuinely wrong type (e.g. `stdClass`) is still rejected.
+ *
+ * Trade-off: a closure typed against only ONE of the two shapes still type-checks, even if the field
+ * is reachable via both request kinds — Psalm can't know. Use the shared contract type if that matters.
  */
 trait Filterable
 {

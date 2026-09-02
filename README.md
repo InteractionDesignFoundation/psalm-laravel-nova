@@ -60,7 +60,7 @@ Hook methods that override a base declaration (`fields()`, `apply()`, `calculate
 
 ### Nova stubs
 
-The plugin ships stubs for `Action`, `Field`, `FieldElement`, `Element`, `PartitionResult`, `Panel`, `Resource`, `Filterable`, `AuthorizedToSee` and `Stack` that fix vendor signatures Psalm cannot resolve. `Resource` is templated, so a resource can declare its model with `@extends`:
+The plugin ships stubs for `Action`, `Field`, `FieldElement`, `Element`, `PartitionResult`, `Panel`, `Resource`, `Filterable` and `Stack` that fix vendor signatures Psalm cannot resolve. `Resource` is templated, so a resource can declare its model with `@extends`:
 
 ```php
 /** @extends \Laravel\Nova\Resource<\App\Models\User> */
@@ -72,7 +72,11 @@ final class User extends Resource
 
 The stubs are registered by the plugin itself; no `<stubs>` entry is needed in `psalm.xml`.
 
-`FieldElement`'s visibility callbacks (`showOnIndex()`, `showOnDetail()`, `hideFromIndex()`, …) are narrowed through a bounded template rather than a fixed union, so a closure typed against the resource's own model (`fn(NovaRequest $request, Post $post): bool`) is accepted instead of being rejected as too narrow. This is a deliberate trade-off, and it is wider than just wrong-model confusion: any type consistent with the bound (`Model|Fluent|array<array-key, mixed>|object`) is accepted for the resource parameter, so a closure typed against the *wrong* model (`fn(NovaRequest $request, Comment $comment)` on a field that only ever appears on `Post`) still type-checks, and so does one typed `stdClass`, `DateTimeImmutable`, or an unrelated array shape. Wrong request classes, wrong return types and wrong arity are still reported.
+`FieldElement`'s visibility callbacks (`showOnIndex()`, `showOnDetail()`, `hideFromIndex()`, …) are narrowed through a bounded template rather than a fixed union, so a closure typed against the resource's own model (`fn(NovaRequest $request, Post $post): bool`) is accepted instead of being rejected as too narrow. This is a deliberate trade-off, and it is wider than just wrong-model confusion: any type consistent with the bound (`Model|Fluent|array<array-key, mixed>|object`) is accepted for the resource parameter, so a closure typed against the *wrong* model (`fn(NovaRequest $request, Comment $comment)` on a field that only ever appears on `Post`) still type-checks, and so does one typed `stdClass`, `DateTimeImmutable`, or an unrelated array shape. Wrong request classes, wrong return types and wrong arity are still reported. This also makes the plugin *stricter* than Nova's own docblocks for the setters Nova types with a bare `mixed` second parameter (Nova only narrows some of them itself, via `@phpstan-param`): the bound now catches a resource parameter typed as something unrelated (e.g. `int`) that Nova's own bare `mixed` wouldn't have flagged.
+
+`canSee()` is narrowed to `NovaRequest` for every `Field`-derived class, but not through a stub: it's declared only on the `AuthorizedToSee` trait, which `Field`/`FieldElement` merely inherit, and a stub cannot override a method the stubbed class only inherits from a used trait. The plugin rewrites it programmatically post-populate instead, scoped to the `Field` hierarchy only — `Tool`, `Dashboard`, `Filters\Filter` and `Menu\*` share the same trait but can receive a plain `Illuminate\Http\Request` at runtime, so their `canSee()` stays wide.
+
+`Filterable::filterable()`'s query parameter accepts either a concrete `Illuminate\Database\Eloquent\Builder` or a `Relation`, since Nova passes a `Relation` for relationship-index requests. Typing a closure against only one of the two type-checks even for a field that's reachable through both request kinds — type against the shared `Illuminate\Contracts\Database\Eloquent\Builder` contract instead if a field needs to be safe against both.
 
 ## Requirements
 

@@ -21,19 +21,11 @@ namespace Laravel\Nova\Fields;
  *
  * `showOnCreating()`/`hideWhenCreating()` take request-only callbacks and need no change.
  *
- * `canSee()` is redeclared here (narrowed to `NovaRequest`) rather than left on the shared
- * `AuthorizedToSee` trait: field resolution (`ResolvesFields`) always goes through `NovaRequest`,
- * unlike `Tool`/`Dashboard`/`Filters\Filter`/`Menu\*`, which can receive a plain `Request` — see
- * `AuthorizedToSee.phpstub` for why the trait itself stays wide.
+ * `canSee()` is narrowed too, but not here — it's only inherited (via `AuthorizedToSee`), and a stub
+ * can't override an inherited method. See `NovaFieldAuthorizationHandler`.
  */
 abstract class FieldElement extends \Laravel\Nova\Element
 {
-    /**
-     * @param \Closure(\Laravel\Nova\Http\Requests\NovaRequest):bool $callback
-     * @return $this
-     */
-    public function canSee(\Closure $callback) {}
-
     /**
      * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
      * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource):bool)|bool $callback
