@@ -50,6 +50,18 @@ namespace Laravel\Nova {
             return [];
         }
     }
+
+    /**
+     * Unlike `Element`/`Field`, `Tool::canSee()` is resolved by `BootTools` middleware with a plain
+     * `Illuminate\Http\Request`, not a `NovaRequest` — it must not inherit a `NovaRequest`-only
+     * `canSee()` narrowing.
+     */
+    abstract class Tool
+    {
+        use \Laravel\Nova\AuthorizedToSee;
+        use \Laravel\Nova\Makeable;
+        use \Laravel\Nova\ProxiesCanSeeToGate;
+    }
 }
 
 namespace Laravel\Nova\Contracts {

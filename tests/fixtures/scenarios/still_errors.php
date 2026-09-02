@@ -6,6 +6,7 @@ use App\Models\Post;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Tool;
 
 /**
  * The narrowed stubs must not turn into blanket `mixed`: every callback below is genuinely wrong
@@ -35,5 +36,18 @@ final class BrokenResource
             // Not a valid line via $lines either: stdClass is neither class-string<Field>, callable, nor Field.
             Stack::make('F', 'a', [new \stdClass()]),
         ];
+    }
+}
+
+/**
+ * AuthorizedToSee::canSee() must stay wide on Tool: narrowing it to NovaRequest would be unsound,
+ * since BootTools middleware hands Tool::canSee() a plain Request, not a NovaRequest.
+ */
+final class BrokenTool extends Tool
+{
+    public function register(): void
+    {
+        // Wrong: narrows to NovaRequest, but Tool can receive a plain Request.
+        $this->canSee(static fn(NovaRequest $request): bool => true);
     }
 }

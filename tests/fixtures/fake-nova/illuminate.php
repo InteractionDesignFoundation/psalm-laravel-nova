@@ -31,3 +31,18 @@ namespace Illuminate\Database\Eloquent {
         }
     }
 }
+
+namespace Illuminate\Database\Eloquent\Relations {
+    /**
+     * `Relation` implements the query builder contract but does not extend the concrete `Builder`
+     * class above — Nova's `QueriesResources::newQuery()` returns exactly this for relationship-index
+     * requests and passes it straight into `Filterable::filterable()`'s callback.
+     */
+    abstract class Relation implements \Illuminate\Contracts\Database\Eloquent\Builder
+    {
+        public function where(string $column, string $operator, mixed $value): static
+        {
+            return $this;
+        }
+    }
+}

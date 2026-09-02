@@ -4,10 +4,13 @@ namespace Scenarios;
 
 use App\Models\Post;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Line;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Tool;
 
 /** Every shape here is idiomatic Nova and must analyse without a single issue. */
 final class CleanResource
@@ -32,7 +35,15 @@ final class CleanResource
                 },
             ),
 
-            // Fix 3: canSee() narrowed to NovaRequest.
+            // Fix 2b: the filter callback also accepts a Relation, since Nova passes one for
+            // relationship-index requests (QueriesResources::newQuery()).
+            Text::make('Category')->filterable(
+                static function (NovaRequest $request, Relation $query, mixed $value, string $attribute): void {
+                    $query->where($attribute, '=', $value);
+                },
+            ),
+
+            // Fix 3: canSee() narrowed to NovaRequest on the Field hierarchy only.
             Text::make('Secret')->canSee(static fn(NovaRequest $request): bool => true),
 
             // Fix 4: Stack built from already-instantiated Field lines.
@@ -41,5 +52,17 @@ final class CleanResource
                 Line::make('Author'),
             ]),
         ];
+    }
+}
+
+/**
+ * Fix 3 stays sound for Tool: AuthorizedToSee::canSee() is not narrowed to NovaRequest globally,
+ * since BootTools middleware hands Tool::canSee() a plain Request.
+ */
+final class CleanTool extends Tool
+{
+    public function register(): void
+    {
+        $this->canSee(static fn(Request $request): bool => true);
     }
 }
