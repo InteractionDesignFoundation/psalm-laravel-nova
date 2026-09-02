@@ -1,0 +1,27 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types the filter callback's query param as `\Illuminate\Contracts\Database\Eloquent\Builder`,
+ * but at runtime it can be either a concrete Eloquent `Builder` (a plain index request) or a `Relation`
+ * (a relationship-index request) — `Laravel\Nova\Http\Requests\QueriesResources::newQuery()` explicitly
+ * returns a `Relation` in that case and passes it straight into the callback unchanged. `Relation`
+ * implements the contract but does not extend the concrete `Builder` class, so typing the closure param
+ * as the concrete `Builder` (needed to call anything beyond the contract's surface) is reported as
+ * `InvalidArgument`, and a closure narrowed to `Relation` alone would be unsound the other way.
+ *
+ * Redeclare the param through a bounded method-level template covering both concrete shapes, mirroring
+ * the pattern used in `FieldElement.phpstub`: Psalm infers `TBuilder` from the closure's own param type
+ * instead of checking against a fixed union, so a closure typed against either concrete class still
+ * narrows correctly, while a genuinely wrong type (e.g. `stdClass`) is still rejected.
+ */
+trait Filterable
+{
+    /**
+     * @template TBuilder of \Illuminate\Database\Eloquent\Builder|\Illuminate\Database\Eloquent\Relations\Relation
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TBuilder, mixed, string):void)|null $filterableCallback
+     * @return $this
+     */
+    public function filterable(?callable $filterableCallback = null) {}
+}

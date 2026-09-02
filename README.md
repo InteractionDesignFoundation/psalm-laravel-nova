@@ -60,7 +60,7 @@ Hook methods that override a base declaration (`fields()`, `apply()`, `calculate
 
 ### Nova stubs
 
-The plugin ships stubs for `Action`, `Field`, `Element`, `PartitionResult`, `Panel` and `Resource` that fix vendor signatures Psalm cannot resolve. `Resource` is templated, so a resource can declare its model with `@extends`:
+The plugin ships stubs for `Action`, `Field`, `FieldElement`, `Element`, `PartitionResult`, `Panel`, `Resource`, `Filterable`, `AuthorizedToSee` and `Stack` that fix vendor signatures Psalm cannot resolve. `Resource` is templated, so a resource can declare its model with `@extends`:
 
 ```php
 /** @extends \Laravel\Nova\Resource<\App\Models\User> */
@@ -71,6 +71,8 @@ final class User extends Resource
 ```
 
 The stubs are registered by the plugin itself; no `<stubs>` entry is needed in `psalm.xml`.
+
+`FieldElement`'s visibility callbacks (`showOnIndex()`, `showOnDetail()`, `hideFromIndex()`, …) are narrowed through a bounded template rather than a fixed union, so a closure typed against the resource's own model (`fn(NovaRequest $request, Post $post): bool`) is accepted instead of being rejected as too narrow. This is a deliberate trade-off, and it is wider than just wrong-model confusion: any type consistent with the bound (`Model|Fluent|array<array-key, mixed>|object`) is accepted for the resource parameter, so a closure typed against the *wrong* model (`fn(NovaRequest $request, Comment $comment)` on a field that only ever appears on `Post`) still type-checks, and so does one typed `stdClass`, `DateTimeImmutable`, or an unrelated array shape. Wrong request classes, wrong return types and wrong arity are still reported.
 
 ## Requirements
 

@@ -1,18 +1,18 @@
-name: Psalm
+name: Tests
 
 on:
   push:
     paths:
       - '**.php'
       - '**.phpstub'
-      - 'psalm*'
+      - 'phpunit.xml.dist'
       - 'composer.json'
-      - '.github/workflows/psalm.yml'
+      - '.github/workflows/tests.yml'
   pull_request:
 
 jobs:
-  psalm:
-    name: psalm
+  phpunit:
+    name: phpunit
     runs-on: ubuntu-latest
     timeout-minutes: 7
     steps:
@@ -33,5 +33,5 @@ jobs:
       - name: Run composer install
         run: composer install -n --prefer-dist
 
-      - name: Run Psalm
-        run: vendor/bin/psalm --no-cache --output-format=github --shepherd
+      - name: Run PHPUnit
+        run: composer test

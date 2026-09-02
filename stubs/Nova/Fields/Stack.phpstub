@@ -1,0 +1,27 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types `Stack`'s lines as `class-string<Field>|callable`, omitting `Field` itself — yet the
+ * documented usage is `Stack::make('Details', [Line::make(...), Text::make(...)])`, i.e. already
+ * instantiated fields (`ensureLinesAreResolveable()` only wraps callables, and `fields()` filters
+ * the collection by `Field::class`). Add `Field` to both unions.
+ *
+ * The `$attribute` union matters too: `__construct()` shifts an array `$attribute` into `$lines`,
+ * which is how the 2-argument `make()` call above lands.
+ *
+ * `NovaMakeSignatureHandler` mirrors these constructor params onto `make()` at analysis time; the
+ * `@method` annotation is kept in sync for humans and IDEs reading the stub.
+ *
+ * @method static static make(\Stringable|string $name, string|array<int, class-string<\Laravel\Nova\Fields\Field>|callable|\Laravel\Nova\Fields\Field>|null $attribute = null, iterable<int, class-string<\Laravel\Nova\Fields\Field>|callable|\Laravel\Nova\Fields\Field> $lines = [])
+ */
+class Stack extends \Laravel\Nova\Fields\Field
+{
+    /**
+     * @param \Stringable|string $name
+     * @param string|array<int, class-string<\Laravel\Nova\Fields\Field>|callable|\Laravel\Nova\Fields\Field>|null $attribute
+     * @param iterable<int, class-string<\Laravel\Nova\Fields\Field>|callable|\Laravel\Nova\Fields\Field> $lines
+     */
+    public function __construct($name, mixed $attribute = null, iterable $lines = []) {}
+}
