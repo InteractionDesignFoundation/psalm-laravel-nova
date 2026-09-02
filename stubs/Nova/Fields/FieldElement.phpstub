@@ -21,11 +21,8 @@ namespace Laravel\Nova\Fields;
  *
  * `showOnCreating()`/`hideWhenCreating()` take request-only callbacks and need no change.
  *
- * `canSee()` is narrowed to `NovaRequest` too (field resolution always goes through `NovaRequest`,
- * unlike `Tool`/`Dashboard`/`Filters\Filter`/`Menu\*`, which can receive a plain `Request`), but not
- * here: it's declared only on the `AuthorizedToSee` trait, which `FieldElement` merely inherits
- * (via `Element`), and a stub can't override a method the stubbed class only inherits — confirmed
- * empirically against real Nova. See `NovaFieldAuthorizationHandler` for the programmatic fix.
+ * `canSee()` is narrowed too, but not here — it's only inherited (via `AuthorizedToSee`), and a stub
+ * can't override an inherited method. See `NovaFieldAuthorizationHandler`.
  */
 abstract class FieldElement extends \Laravel\Nova\Element
 {

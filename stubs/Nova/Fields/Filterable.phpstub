@@ -16,14 +16,8 @@ namespace Laravel\Nova\Fields;
  * instead of checking against a fixed union, so a closure typed against either concrete class still
  * narrows correctly, while a genuinely wrong type (e.g. `stdClass`) is still rejected.
  *
- * Accepted trade-off: typing the closure against ONE concrete shape (just `Builder`, or just
- * `Relation`) type-checks even though the field may be reachable via both request kinds — nothing in
- * Nova's own signature says whether a given resource is ever browsed as a relation, so Psalm cannot
- * warn about it. A closure that only calls methods common to both (or that type-checks its own
- * `$query` parameter internally) is safe either way; one written against only `Builder`-specific or
- * only `Relation`-specific methods can still throw at runtime on the other request kind. Type against
- * the shared `Illuminate\Contracts\Database\Eloquent\Builder` contract instead if that matters for a
- * given field.
+ * Trade-off: a closure typed against only ONE of the two shapes still type-checks, even if the field
+ * is reachable via both request kinds — Psalm can't know. Use the shared contract type if that matters.
  */
 trait Filterable
 {

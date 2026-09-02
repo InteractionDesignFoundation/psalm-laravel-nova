@@ -11,16 +11,9 @@
         <directory name="scenarios"/>
     </projectFiles>
 
-    <!-- The fake Laravel/Nova declarations stand in for vendor code. They are reached only through
-         the composer classmap (autoload-dev), the same way a real Nova app finds vendor/laravel/nova:
-         Psalm resolves them lazily via the project's own autoloader when a scenario references them,
-         not as <stubs> or <projectFiles>. This matters: config-declared <stubs> are scanned before a
-         plugin's own addStubFile() stubs, so a plugin stub always "wins" there regardless of whether
-         its override mechanism actually works against a normally-scanned class. That precedence quirk
-         previously masked a real bug (a plugin stub cannot override a method a class only inherits
-         from a used trait) — see git history on this file for the incident. Autoload-classmap scanning
-         has no such special-casing, so it exercises the plugin's stub/hook registration exactly as a
-         consuming project would. -->
+    <!-- Fake Nova reaches Psalm only via the composer classmap (autoload-dev), not <stubs>: config
+         <stubs> are scanned before a plugin's own addStubFile() stubs and always "win" there, which
+         previously masked a stub override that didn't actually work against normally-scanned code. -->
 
     <plugins>
         <pluginClass class="InteractionDesignFoundation\PsalmLaravelNova\Plugin"/>

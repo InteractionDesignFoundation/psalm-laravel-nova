@@ -13,33 +13,12 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 /**
- * Narrows `canSee()`'s callback parameter to `NovaRequest` for every `Field`-derived class, without
- * touching `Tool`/`Dashboard`/`Filters\Filter`/`Menu\*`, which share the same `AuthorizedToSee` trait
- * but can receive a plain `Illuminate\Http\Request` at runtime (`BootTools` middleware).
- *
- * A stub file cannot do this: `canSee()` is declared only on the `AuthorizedToSee` trait, and
- * `FieldElement`/`Field`/every concrete field class only *inherit* it (no class in that chain
- * redeclares it). A plugin stub can override a method the stubbed class itself declares, and can
- * add a genuinely new one, but — confirmed empirically against real Nova 5.10.1, redeclaring
- * `canSee()` on `Element.phpstub` (which actually `use`s the trait) or on `FieldElement.phpstub`
- * (which merely inherits it) — it cannot override a method the class only inherits: Psalm's
- * `Methods::getMethodParams()` resolves the call through `getDeclaringMethodId()`, which reads
- * `declaring_method_ids['cansee']` off the *called* class's own storage; that entry still points at
- * `AuthorizedToSee`/`Element` regardless of what the stub adds, so the stub's declaration is simply
- * never consulted. `MethodParamsProviderInterface` cannot fill the gap either: Psalm keys it by the
- * exact called class (`Methods::getMethodParams()`, `AtomicMethodCallAnalyzer::$fq_class_name`), with
- * no hierarchy walk, so it would need to enumerate every concrete Field subclass — impossible for an
- * open, user-extensible hierarchy (the same reason `MethodParamsProviderInterface` was already ruled
- * out for resolving a resource's model, see `NovaResourceQueryMethodHandler`).
- *
- * What does work, because it operates on the same storage fields `getDeclaringMethodId()` actually
- * reads: post-populate, for every class extending `FieldElement`, point that class's own
- * `declaring_method_ids['cansee']` at itself and give it its own `methods['cansee']` entry — a
- * narrowed clone of whatever `AuthorizedToSee::canSee()` currently declares. This is exactly what a
- * real `public function canSee(...)` override on that class would produce in storage, just built
- * programmatically instead of textually. Classes outside the `FieldElement` hierarchy are never
- * touched, so `Tool::canSee(fn(Request $request): bool => true)` keeps type-checking and
- * `Tool::canSee(fn(NovaRequest $request): bool => true)` keeps being rejected.
+ * Narrows `canSee()` to `NovaRequest` for every `FieldElement` descendant, leaving `Tool`/`Dashboard`/
+ * `Filters\Filter`/`Menu\*` (same `AuthorizedToSee` trait, but can get a plain `Request`) untouched.
+ * A stub can't do this — `canSee()` is only inherited, never declared, on the classes in between, and
+ * a stub can override a declared method but not an inherited one (confirmed against real Nova). This
+ * rewrites `declaring_method_ids`/`methods` directly instead — the fields Psalm's method resolution
+ * actually reads — the same way `NovaResourceQueryMethodHandler` narrows query-builder params.
  * @internal
  */
 final class NovaFieldAuthorizationHandler implements AfterCodebasePopulatedInterface
