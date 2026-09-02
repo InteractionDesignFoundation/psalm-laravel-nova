@@ -37,11 +37,17 @@ final class AcceptanceTest extends TestCase
         self::assertSame(
             [
                 // Wrong request class.
-                ['line' => 20, 'type' => 'InvalidArgument'],
+                ['line' => 21, 'type' => 'InvalidArgument'],
                 // Wrong return type.
-                ['line' => 23, 'type' => 'InvalidArgument'],
+                ['line' => 24, 'type' => 'InvalidArgument'],
                 // Wrong param type on the authorisation callback.
-                ['line' => 26, 'type' => 'InvalidArgument'],
+                ['line' => 27, 'type' => 'InvalidArgument'],
+                // Wrong builder type on the filter callback.
+                ['line' => 30, 'type' => 'InvalidArgument'],
+                // Stack line is not a valid class-string<Field>|callable|Field.
+                ['line' => 33, 'type' => 'InvalidArgument'],
+                // Stack line via $lines is not a valid class-string<Field>|callable|Field either.
+                ['line' => 36, 'type' => 'InvalidArgument'],
             ],
             array_map(
                 static fn(array $issue): array => ['line' => $issue['line_from'], 'type' => $issue['type']],

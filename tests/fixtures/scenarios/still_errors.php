@@ -3,6 +3,7 @@
 namespace Scenarios;
 
 use App\Models\Post;
+use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
 
@@ -24,6 +25,15 @@ final class BrokenResource
 
             // Wrong param type on the authorisation callback.
             Text::make('C')->canSee(static fn(int $request): bool => true),
+
+            // Wrong builder type on the filter callback.
+            Text::make('D')->filterable(static function (NovaRequest $request, \stdClass $wrongBuilder, mixed $value, string $attribute): void {}),
+
+            // Not a valid line: an int is neither class-string<Field>, callable, nor Field.
+            Stack::make('E', [42]),
+
+            // Not a valid line via $lines either: stdClass is neither class-string<Field>, callable, nor Field.
+            Stack::make('F', 'a', [new \stdClass()]),
         ];
     }
 }
