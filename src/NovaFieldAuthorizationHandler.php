@@ -25,6 +25,8 @@ final class NovaFieldAuthorizationHandler implements AfterCodebasePopulatedInter
 {
     private const FIELD_ELEMENT = 'laravel\nova\fields\fieldelement';
 
+    private const AUTHORIZED_TO_SEE = 'laravel\nova\authorizedtosee';
+
     private const CAN_SEE = 'cansee';
 
     private const NOVA_REQUEST = 'Laravel\Nova\Http\Requests\NovaRequest';
@@ -48,11 +50,9 @@ final class NovaFieldAuthorizationHandler implements AfterCodebasePopulatedInter
     private static function narrowCanSee(Codebase $codebase, ClassLikeStorage $storage): void
     {
         $declaringId = $storage->declaring_method_ids[self::CAN_SEE] ?? null;
-        if ($declaringId === null
-            || mb_strtolower($declaringId->fq_class_name) === mb_strtolower($storage->name)
-            || !$codebase->classlike_storage_provider->has($declaringId->fq_class_name)
-        ) {
-            // No canSee() to narrow, or the class already declares its own (leave user intent alone).
+        if ($declaringId === null || mb_strtolower($declaringId->fq_class_name) !== self::AUTHORIZED_TO_SEE) {
+            // canSee() is missing, or a user class overrode it somewhere in the chain — only ever
+            // narrow Nova's own trait method, never second-guess a user's own override.
             return;
         }
 

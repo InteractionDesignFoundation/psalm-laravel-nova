@@ -89,27 +89,30 @@ final class AcceptanceTest extends TestCase
         $stderrFile = tempnam(sys_get_temp_dir(), 'psalm-plugin-nova-stderr-');
         self::assertIsString($stderrFile, 'Could not create a temp file for stderr.');
 
-        $process = proc_open(
-            [
-                \PHP_BINARY,
-                $projectRoot.'/vendor/bin/psalm',
-                '--no-cache',
-                '--no-progress',
-                '--output-format=json',
-                '-c',
-                'tests/fixtures/psalm.xml',
-            ],
-            [1 => ['pipe', 'w'], 2 => ['file', $stderrFile, 'w']],
-            $pipes,
-            $projectRoot,
-        );
-        self::assertIsResource($process, 'Could not start Psalm.');
+        try {
+            $process = proc_open(
+                [
+                    \PHP_BINARY,
+                    $projectRoot.'/vendor/bin/psalm',
+                    '--no-cache',
+                    '--no-progress',
+                    '--output-format=json',
+                    '-c',
+                    'tests/fixtures/psalm.xml',
+                ],
+                [1 => ['pipe', 'w'], 2 => ['file', $stderrFile, 'w']],
+                $pipes,
+                $projectRoot,
+            );
+            self::assertIsResource($process, 'Could not start Psalm.');
 
-        $stdout = (string) stream_get_contents($pipes[1]);
-        fclose($pipes[1]);
-        $exitCode = proc_close($process);
-        $stderr = (string) file_get_contents($stderrFile);
-        unlink($stderrFile);
+            $stdout = (string) stream_get_contents($pipes[1]);
+            fclose($pipes[1]);
+            $exitCode = proc_close($process);
+            $stderr = (string) file_get_contents($stderrFile);
+        } finally {
+            unlink($stderrFile);
+        }
 
         // 0 = no issues, 2 = issues were found (expected — still_errors.php is meant to raise some;
         // see IssueBuffer::finish()). Anything else is Psalm itself failing to run, not an issue.

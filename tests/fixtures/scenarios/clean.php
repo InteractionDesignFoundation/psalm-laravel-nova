@@ -5,6 +5,8 @@ namespace Scenarios;
 use App\Models\Post;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\Request;
+use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Fields\Line;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
@@ -47,6 +49,31 @@ final class CleanResource
                 Line::make('Title'),
                 Line::make('Author'),
             ]),
+        ];
+    }
+}
+
+/** A user's own canSee() override must never be narrowed — only Nova's own trait method is. */
+final class FieldWithOwnAuthorization extends Field
+{
+    /**
+     * @param \Closure(Request): bool $callback
+     * @psalm-suppress MissingPureAnnotation, UnusedParam — irrelevant to what this fixture tests
+     */
+    #[\Override]
+    public function canSee(\Closure $callback)
+    {
+        return $this;
+    }
+}
+
+final class UsesFieldWithOwnAuthorization
+{
+    /** @return list<\Laravel\Nova\Fields\Field> */
+    public function fields(): array
+    {
+        return [
+            (new FieldWithOwnAuthorization('Name'))->canSee(static fn(Request $request): bool => true),
         ];
     }
 }
