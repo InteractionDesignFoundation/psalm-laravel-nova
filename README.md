@@ -72,7 +72,7 @@ final class User extends Resource
 
 The stubs are registered by the plugin itself; no `<stubs>` entry is needed in `psalm.xml`.
 
-`FieldElement`'s visibility callbacks (`showOnIndex()`, `showOnDetail()`, `hideFromIndex()`, …) are narrowed through a bounded template rather than a fixed union, so a closure typed against the resource's own model (`fn(NovaRequest $request, Post $post): bool`) is accepted instead of being rejected as too narrow. This is a deliberate trade-off: because a field's owning resource is not visible to Psalm, a closure typed against the *wrong* model (`fn(NovaRequest $request, Comment $comment)` on a field that only ever appears on `Post`) still type-checks. Wrong request classes, wrong return types and wrong arity are still reported.
+`FieldElement`'s visibility callbacks (`showOnIndex()`, `showOnDetail()`, `hideFromIndex()`, …) are narrowed through a bounded template rather than a fixed union, so a closure typed against the resource's own model (`fn(NovaRequest $request, Post $post): bool`) is accepted instead of being rejected as too narrow. This is a deliberate trade-off, and it is wider than just wrong-model confusion: any type consistent with the bound (`Model|Fluent|array<array-key, mixed>|object`) is accepted for the resource parameter, so a closure typed against the *wrong* model (`fn(NovaRequest $request, Comment $comment)` on a field that only ever appears on `Post`) still type-checks, and so does one typed `stdClass`, `DateTimeImmutable`, or an unrelated array shape. Wrong request classes, wrong return types and wrong arity are still reported.
 
 ## Requirements
 
