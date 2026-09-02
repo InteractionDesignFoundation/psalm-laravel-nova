@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 
 namespace Laravel\Nova\Actions;
 
@@ -35,14 +35,18 @@ class Action implements \JsonSerializable
      *  : \Laravel\Nova\Actions\ActionResponse
      * )
      */
-    public static function danger($name, ?string $message = null): void {}
+    public static function danger($name, string $message = null)
+    {
+    }
 
     /**
      * Return a delete response from the action.
      *
      * @return \Laravel\Nova\Actions\ActionResponse
      */
-    public static function deleted() {}
+    public static function deleted()
+    {
+    }
 
     /**
      * Return a redirect response from the action.
@@ -54,7 +58,9 @@ class Action implements \JsonSerializable
      *  : \Laravel\Nova\Actions\ActionResponse
      * )
      */
-    public static function redirect($name, $url = null): void {}
+    public static function redirect($name, $url = null)
+    {
+    }
 
     /**
      * Return a Inertia visit from the action.
@@ -68,7 +74,9 @@ class Action implements \JsonSerializable
      *  : \Laravel\Nova\Actions\ActionResponse
      * )
      */
-    public static function push($name, $path, $options = []): void {}
+    public static function push($name, $path, $options = [])
+    {
+    }
 
     /**
      * Return a Inertia visit from the action.
@@ -81,7 +89,9 @@ class Action implements \JsonSerializable
      *  : \Laravel\Nova\Actions\ActionResponse
      * )
      */
-    public static function visit($name, $path = [], $options = []): void {}
+    public static function visit($name, $path = [], $options = [])
+    {
+    }
 
     /**
      * Return an open in new tab response from the action.
@@ -93,17 +103,21 @@ class Action implements \JsonSerializable
      *  : \Laravel\Nova\Actions\ActionResponse
      * )
      */
-    public static function openInNewTab($name, $url = null): void {}
+    public static function openInNewTab($name, $url = null)
+    {
+    }
 
     /**
      * Return a download response from the action.
      * @deprecated Use "downloadURL"
      *
-     * @param string $url
      * @param string $name
+     * @param string $url
      * @return \Laravel\Nova\Actions\ActionResponse
      */
-    public static function download($url, $name) {}
+    public static function download($url, $name)
+    {
+    }
 
     /**
      * Return a download response from the action.
@@ -115,7 +129,9 @@ class Action implements \JsonSerializable
      *  : \Laravel\Nova\Actions\ActionResponse
      * )
      */
-    public static function downloadURL($name, $url): void {}
+    public static function downloadURL($name, $url)
+    {
+    }
 
     /**
      * Return an action modal response from the action.
@@ -128,5 +144,7 @@ class Action implements \JsonSerializable
      *  : \Laravel\Nova\Actions\ActionResponse
      * )
      */
-    public static function modal($name, $modal = [], $data = []): void {}
+    public static function modal($name, $modal = [], $data = [])
+    {
+    }
 }

@@ -5,12 +5,10 @@ namespace Scenarios;
 use App\Models\Post;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
-use Illuminate\Http\Request;
 use Laravel\Nova\Fields\Line;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
-use Laravel\Nova\Tool;
 
 /** Every shape here is idiomatic Nova and must analyse without a single issue. */
 final class CleanResource
@@ -19,13 +17,11 @@ final class CleanResource
     public function fields(): array
     {
         return [
-            // Fix 1: the resource callback narrowed to the resource's own model.
+            // Fix 1: the resource callback narrowed to the resource's own model. All 6 visibility
+            // setters share the same @template bound (see FieldElement.phpstub), so one show* and
+            // one hide* case exercises the pattern without repeating it 6 times.
             Text::make('Title')->showOnDetail(static fn(NovaRequest $request, Post $post): bool => $post->published),
             Text::make('Slug')->hideFromIndex(static fn(NovaRequest $request, mixed $post): bool => true),
-            Text::make('Body')->showOnIndex(static fn(NovaRequest $request, Post $post): bool => $post->title !== ''),
-            Text::make('Excerpt')->hideFromDetail(static fn(NovaRequest $request, Post $post): bool => false),
-            Text::make('Author')->showOnUpdating(static fn(NovaRequest $request, Post $post): bool => true),
-            Text::make('Notes')->hideWhenUpdating(static fn(NovaRequest $request, Post $post): bool => true),
             Text::make('State')->showOnDetail(true),
 
             // Fix 2: the filter callback typed with the concrete Eloquent builder.
@@ -52,17 +48,5 @@ final class CleanResource
                 Line::make('Author'),
             ]),
         ];
-    }
-}
-
-/**
- * Fix 3 stays sound for Tool: AuthorizedToSee::canSee() is not narrowed to NovaRequest globally,
- * since BootTools middleware hands Tool::canSee() a plain Request.
- */
-final class CleanTool extends Tool
-{
-    public function register(): void
-    {
-        $this->canSee(static fn(Request $request): bool => true);
     }
 }

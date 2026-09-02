@@ -1,4 +1,4 @@
-<?php declare(strict_types=1);
+<?php
 
 namespace Laravel\Nova;
 
@@ -29,12 +29,12 @@ class Panel extends \Laravel\Nova\Fields\FieldMergeValue implements \JsonSeriali
      * @param \Stringable|string $name
      * @param (callable():TPanelFieldsResolved)|TPanelFieldsResolved $fields
      */
-    public function __construct($name, callable | iterable $fields = [], ?string $attribute = null) {}
+    public function __construct($name, callable|iterable $fields = [], ?string $attribute = null) {}
 
     /**
      * @param \Stringable|string $name
      * @param (callable():TPanelFieldsResolved)|TPanelFieldsResolved $fields
      * @return static
      */
-    public static function makeDefault($name, callable | iterable $fields = [], ?string $attribute = null) {}
+    public static function makeDefault($name, callable|iterable $fields = [], ?string $attribute = null) {}
 }
