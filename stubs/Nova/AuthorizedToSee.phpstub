@@ -1,0 +1,18 @@
+<?php
+
+namespace Laravel\Nova;
+
+/**
+ * Nova types the authorization callback as `\Closure(NovaRequest|Request):bool`, so a closure
+ * typed `fn (NovaRequest $request)` is rejected as too narrow. Nova resolves the callback through
+ * `authorizedToSee()`, which is always handed a `NovaRequest` in practice, so narrow the param to
+ * `NovaRequest` — the shape every Nova app writes.
+ */
+trait AuthorizedToSee
+{
+    /**
+     * @param \Closure(\Laravel\Nova\Http\Requests\NovaRequest):bool $callback
+     * @return $this
+     */
+    public function canSee(\Closure $callback) {}
+}

@@ -1,0 +1,21 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types the filter callback's query param as `\Illuminate\Contracts\Database\Eloquent\Builder`,
+ * but at runtime always passes an Eloquent `Builder`. Typing the closure param as the concrete
+ * `\Illuminate\Database\Eloquent\Builder` (needed to call anything beyond the contract's surface)
+ * is therefore reported as `InvalidArgument`, since the contract is not a subtype of the class.
+ *
+ * Redeclare the param with the concrete builder Nova actually passes. Interface-typed closures keep
+ * working: `Builder` implements the contract, so a closure accepting the contract is still accepted.
+ */
+trait Filterable
+{
+    /**
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Database\Eloquent\Builder, mixed, string):void)|null $filterableCallback
+     * @return $this
+     */
+    public function filterable(?callable $filterableCallback = null) {}
+}

@@ -1,0 +1,62 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types the visibility callbacks' 2nd param as the widest thing a resource can be
+ * (`Model|Fluent|object|array`). A closure that narrows it to the resource's own model —
+ * the idiomatic shape in every Nova app — is then rejected as contravariance-breaking
+ * (`InvalidArgument`/`ArgumentTypeCoercion`), even though Nova always passes exactly that model.
+ *
+ * Redeclaring the param through a bounded method-level template lets Psalm infer `TResource`
+ * from the closure instead of checking against a fixed union. Wrong request class, wrong return
+ * type and wrong arity are still reported; only cross-model confusion is lost (a closure taking
+ * an unrelated model is accepted), which is an accepted trade-off — Psalm cannot know a field's
+ * owning resource, since the Field hierarchy is open and fields are shared across resources.
+ *
+ * `showOnCreating()`/`hideWhenCreating()` take request-only callbacks and need no change.
+ */
+abstract class FieldElement extends \Laravel\Nova\Element
+{
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource):bool)|bool $callback
+     * @return $this
+     */
+    public function hideFromIndex(callable|bool $callback = true) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource):bool)|bool $callback
+     * @return $this
+     */
+    public function hideFromDetail(callable|bool $callback = true) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource):bool)|bool $callback
+     * @return $this
+     */
+    public function hideWhenUpdating(callable|bool $callback = true) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource):bool)|bool $callback
+     * @return $this
+     */
+    public function showOnIndex(callable|bool $callback = true) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource):bool)|bool $callback
+     * @return $this
+     */
+    public function showOnDetail(callable|bool $callback = true) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param (callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource):bool)|bool $callback
+     * @return $this
+     */
+    public function showOnUpdating(callable|bool $callback = true) {}
+}
