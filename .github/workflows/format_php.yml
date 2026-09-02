@@ -4,6 +4,7 @@ on:
   push:
     paths:
       - '**.php'
+      - '**.phpstub'
       - 'composer.json'
       - 'phpcs.xml'
       - '.github/workflows/format_php.yml'

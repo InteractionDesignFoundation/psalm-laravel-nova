@@ -20,4 +20,20 @@
 
     <!-- Paths to check -->
     <file>src</file>
+
+    <!-- stubs/**.phpstub is deliberately NOT scanned here. Unlike php-cs-fixer (see .php-cs-fixer.php,
+         which does scan .phpstub), several IxDFCodingStandard/Slevomat sniffs encode assumptions that
+         are correct for our own implementation code but actively wrong for declarations mirroring an
+         external, looser vendor API:
+           - RequireAbstractOrFinal would force `final class Panel`/`final class Action`, but the real
+             `Laravel\Nova\Panel`/`Laravel\Nova\Actions\Action` are neither final nor abstract and are
+             legitimately extended by Nova apps and packages;
+           - DisallowMixedTypeHint would flag the deliberately-`mixed` callback params (e.g.
+             `Filterable`'s filter value, `FieldElement`'s resource template bound) that these stubs
+             exist to keep wide;
+           - DisallowEmptyFunction/InvalidNoReturn assume a body is missing rather than intentionally
+             absent, which is true of every stub method by design.
+         Getting these to pass would mean changing what the stubs assert, not just how they're
+         formatted. `.github/workflows/format_php.yml` still triggers on `**.phpstub` so a future
+         stub-only PR runs php-cs-fixer, matching `psalm.yml`. -->
 </ruleset>
