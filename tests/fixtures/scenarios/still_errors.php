@@ -24,6 +24,11 @@ final class BrokenResource
             // Wrong return type.
             Text::make('B')->showOnDetail(static fn(NovaRequest $request, Post $post): string => 'nope'),
 
+            // Wrong resource param type — a stricter check than Nova's own docblock: hideFromIndex()
+            // (unlike showOnIndex()/showOnDetail()) has no @phpstan-param upstream, so it was bare
+            // `mixed` and accepted anything before this plugin's bounded template.
+            Text::make('G')->hideFromIndex(static fn(NovaRequest $request, int $post): bool => true),
+
             // Wrong param type on the authorisation callback.
             Text::make('C')->canSee(static fn(int $request): bool => true),
 

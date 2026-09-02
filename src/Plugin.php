@@ -20,18 +20,19 @@ final class Plugin implements PluginEntryPointInterface
         require_once __DIR__.'/NovaMakeSignatureHandler.php';
         require_once __DIR__.'/NovaWhenReturnTypeHandler.php';
         require_once __DIR__.'/NovaSuppressHandler.php';
+        require_once __DIR__.'/NovaFieldAuthorizationHandler.php';
 
         $registration->registerHooksFromClass(NovaResourceQueryMethodHandler::class);
         $registration->registerHooksFromClass(NovaMakeSignatureHandler::class);
         $registration->registerHooksFromClass(NovaWhenReturnTypeHandler::class);
         $registration->registerHooksFromClass(NovaSuppressHandler::class);
+        $registration->registerHooksFromClass(NovaFieldAuthorizationHandler::class);
 
         // Nova stubs that fix vendor signatures Psalm cannot resolve (and template Resource so a
         // resource can declare its model via @extends). Shipped with the package so it stays
         // self-contained.
         $stubsDir = __DIR__.'/../stubs/Nova';
         $registration->addStubFile($stubsDir.'/Actions/Action.phpstub');
-        $registration->addStubFile($stubsDir.'/AuthorizedToSee.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Field.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/FieldElement.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Filterable.phpstub');

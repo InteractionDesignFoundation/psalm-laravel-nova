@@ -28,7 +28,10 @@
     "autoload-dev": {
         "psr-4": {
             "InteractionDesignFoundation\\PsalmLaravelNova\\Tests\\": "tests/"
-        }
+        },
+        "classmap": [
+            "tests/fixtures/fake-nova/"
+        ]
     },
     "config": {
         "allow-plugins": {
