@@ -47,16 +47,18 @@ The property value is validated (it must exist and be a genuine `Model` subclass
 
 `Illuminate\Http\Resources\ConditionallyLoadsAttributes::when()` returns `mixed`, which degrades the inferred element type of every array literal built with it, including Nova's `fields()` and `actions()`. `NovaWhenReturnTypeHandler` introspects the argument and returns the closure's return type (or the value's type) unioned with `MissingValue`. A literal `true`/`false` condition drops the dead branch. When the type cannot be resolved, the provider declines rather than leaking a raw `Closure` into the union.
 
-### Reflectively dispatched members are not reported as unused
+### Reflectively dispatched code is not reported as unused
 
-Under `findUnusedCode="true"`, members Nova reaches by reflection have no visible call site. `NovaSuppressHandler` covers the ones that stubs cannot express, mirroring what `Psalm\LaravelPlugin\Handlers\SuppressHandler` does for Laravel:
+Under `findUnusedCode="true"`, the classes and members Nova reaches by reflection have no visible call site. `NovaConventionsHandler` marks the ones that stubs cannot express as entry points, the same signal an `@api` docblock carries, so Psalm treats them as reachable *and* keeps alive whatever they call:
 
-- `PossiblyUnusedMethod` on an action's `handle()`, which Nova dispatches through `method_exists()` and the container rather than a base-class declaration;
-- `PossiblyUnusedMethod` on a resource's open-ended `relatable{FieldName}()` query methods;
-- `PossiblyUnusedMethod` on the Gate methods (`viewAny`, `view`, `create`, …) of the policy a resource names in `public static $policy`, which Nova reaches via `authorizedTo()` → `Gate::callPolicyMethod()`;
-- `NonInvariantPropertyType` on `$policy` itself, but only for declarations compatible with the stub's `string` — `public static int $policy` still raises.
+- a resource's open-ended `relatable{FieldName}()` query methods;
+- an action's `handle()`, which Nova dispatches through `method_exists()` and the container rather than a base-class declaration;
+- the Gate methods (`viewAny`, `view`, `create`, …) of the policy a resource names in `public static $policy`, which Nova reaches via `authorizedTo()` → `Gate::callPolicyMethod()`;
+- the resource class itself, since `Nova::resourcesIn(app_path('Nova'))` discovers resources by scanning a directory and never names them.
 
-Hook methods that override a base declaration (`fields()`, `apply()`, `calculate()`, …) already inherit the parent's "used" status from the stubs, so they need no suppression.
+Marking rather than suppressing matters since `psalm/psalm-plugin-api` 0.2.0, where suppressing an unused-code issue silences the report for that one symbol only: a private helper called from nothing but a hook would still be reported `UnusedMethod`. A hook shared through a trait is marked on the trait, which is where Psalm reads the flag from. Hook methods that override a base declaration (`fields()`, `apply()`, `calculate()`, …) already inherit the parent's "used" status from the stubs and need nothing here.
+
+Marking the resource class is the one broad step, so it applies only when `findUnusedCode` is on. It also stops Psalm checking that resource's public surface (an unread public property or an uncalled public method goes unreported) and silences `ClassMustBeFinal` for it. The one remaining suppression is `NonInvariantPropertyType` on `$policy`, and only for declarations compatible with the stub's `string`. `public static int $policy` still raises.
 
 ### Nova stubs
 

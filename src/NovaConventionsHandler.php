@@ -37,7 +37,7 @@ use Psalm\Storage\PropertyStorage;
  * @see https://github.com/psalm/psalm-plugin-laravel/issues/867
  * @internal
  */
-final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
+final class NovaConventionsHandler implements AfterCodebasePopulatedInterface
 {
     /**
      * Hook methods Nova invokes by reflection that are *not* declared on the base class (so they are
