@@ -9,13 +9,39 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource;
 
 /**
- * Nova discovers resources by scanning `app/Nova`, so nothing references this class, and its
- * `relatable*()` hooks are reached by reflection. The class, the hooks, and everything only the
- * hooks call must all stay alive.
+ * An abstract intermediate resource, which the class-level marking deliberately skips. Its
+ * `relatable*()` hook is therefore kept alive only by the per-method marking, and nothing else in
+ * this fixture would catch that marking being dropped.
  *
  * @extends Resource<Post>
  */
-final class PostResource extends Resource
+abstract class BaseAuthoredResource extends Resource
+{
+    /** @param Builder $query */
+    public static function relatableEditors(NovaRequest $request, $query): Builder
+    {
+        return self::visibleOnly($query, WidgetResource::class);
+    }
+
+    /**
+     * Only reachable from the reflection-dispatched `relatableEditors()`.
+     *
+     * @param class-string<Resource> $relatedResource anchors WidgetResource to an entry point that
+     *        does not depend on class-level marking, so the silence of its members stays an
+     *        independent assertion
+     */
+    private static function visibleOnly(Builder $query, string $relatedResource): Builder
+    {
+        return $query;
+    }
+}
+
+/**
+ * Nova discovers resources by scanning `app/Nova`, so nothing references this class, and its
+ * `relatable*()` hooks are reached by reflection. The class, the hooks, and everything only the
+ * hooks call must all stay alive.
+ */
+final class PostResource extends BaseAuthoredResource
 {
     public static string $policy = PostPolicy::class;
 
@@ -78,4 +104,27 @@ final class PostPolicy
     {
         return true;
     }
+}
+
+/**
+ * The price of marking a resource an entry point class-wide: Psalm stops checking its public
+ * surface, and stops asking for the class to be final. This class is referenced (see
+ * `BaseAuthoredResource::relatableEditors()`), so all three would be reported without that
+ * marking — pinned here so the blast radius cannot widen or narrow unnoticed.
+ *
+ * @extends Resource<Post>
+ */
+class WidgetResource extends Resource
+{
+    /** Read nowhere: PossiblyUnusedProperty. */
+    public string $unreadLabel = '';
+
+    /** Called from nowhere: PossiblyUnusedMethod. */
+    public function unusedHook(): void {}
+}
+
+/** Not a Nova type, so nothing marks it: UnusedClass must still be reported. */
+final class OrphanHelper
+{
+    public function run(): void {}
 }

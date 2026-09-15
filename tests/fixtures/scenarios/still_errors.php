@@ -6,6 +6,7 @@ use App\Models\Post;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Resource;
 use Laravel\Nova\Tool;
 
 /**
@@ -56,3 +57,13 @@ final class BrokenTool extends Tool
         $this->canSee(static fn(NovaRequest $request): bool => true);
     }
 }
+
+/**
+ * Psalm emits ClassMustBeFinal outside its find_unused_code guard, and a class-level entry point
+ * silences it. This config has findUnusedCode off, so the resource must not be marked and the issue
+ * must survive — the plugin may not cost anything to a project that never asked for unused-code
+ * analysis.
+ *
+ * @extends Resource<Post>
+ */
+class NonFinalResource extends Resource {}

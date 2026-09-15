@@ -59,6 +59,9 @@ final class AcceptanceTest extends TestCase
                 ['text' => '[new \stdClass()]', 'type' => 'InvalidArgument'],
                 // Tool::canSee() narrowed to NovaRequest would be unsound: Tool can receive a plain Request.
                 ['text' => 'static fn(NovaRequest $request): bool => true', 'type' => 'ArgumentTypeCoercion'],
+                // Marking a resource an entry point silences ClassMustBeFinal, so the plugin only
+                // does it when unused-code analysis is on — which this config's is not.
+                ['text' => 'NonFinalResource', 'type' => 'ClassMustBeFinal'],
             ],
             array_map(
                 static fn(array $issue): array => ['text' => $issue['selected_text'], 'type' => $issue['type']],
@@ -71,6 +74,10 @@ final class AcceptanceTest extends TestCase
     /**
      * A Nova hook is an entry point, not a silenced report: everything reachable only from one stays
      * alive, and everything else is still reported.
+     *
+     * The absences matter as much as the two issues asserted: `WidgetResource`'s unread property and
+     * uncalled public method are the price of marking a resource an entry point class-wide, and
+     * `BaseAuthoredResource::relatableEditors()` is kept alive by per-method marking alone.
      */
     #[Test]
     public function nova_entry_points_keep_their_callees_alive(): void
@@ -78,7 +85,10 @@ final class AcceptanceTest extends TestCase
         $issues = $this->issuesIn('scenarios-unused/nova_entry_points.php', 'tests/fixtures/psalm-unused.xml');
 
         self::assertSame(
-            [['text' => 'neverCalled', 'type' => 'UnusedMethod']],
+            [
+                ['text' => 'neverCalled', 'type' => 'UnusedMethod'],
+                ['text' => 'OrphanHelper', 'type' => 'UnusedClass'],
+            ],
             array_map(
                 static fn(array $issue): array => ['text' => $issue['selected_text'], 'type' => $issue['type']],
                 $issues,

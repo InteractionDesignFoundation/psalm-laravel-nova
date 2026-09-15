@@ -22,6 +22,10 @@ use Psalm\Storage\PropertyStorage;
  * as unused. This mirrors `Psalm\LaravelPlugin\Handlers\SuppressHandler` (the data-table approach), but
  * for Nova base classes.
  *
+ * Two distinct mechanisms, not interchangeable. Unused-code findings are fixed by marking the symbol an
+ * entry point (see markAsEntryPoint), which also keeps whatever the symbol calls alive; everything else
+ * — currently only NonInvariantPropertyType on `$policy` — is a per-symbol issue suppression.
+ *
  * All work happens in afterCodebasePopulated: parent_classes is fully resolved there, and re-reading the
  * AST for the `$policy` bridge stays in the main process (a static map populated during forked scanning
  * would not survive serialisation back to the analysis phase).
@@ -123,7 +127,13 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
                 // marked: they are instantiated by a resource's `actions()` / `filters()` /
                 // `lenses()` / `cards()`, or listed in NovaServiceProvider, so they do have call
                 // sites. An abstract base resource is reached through its concrete children.
-                if (!$classStorage->abstract) {
+                //
+                // Gated on unused-code analysis being on, unlike every other marking here: a
+                // class-level entry point also silences ClassMustBeFinal, which Psalm emits
+                // outside its find_unused_code guard. Without the gate this would swallow that
+                // issue for every Nova resource in every project, including the majority that
+                // never enable findUnusedCode.
+                if (!$classStorage->abstract && $codebase->find_unused_code !== null) {
                     self::markAsEntryPoint($classStorage);
                 }
 
@@ -311,18 +321,19 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
      * walk instead, keeping the hook's callees alive.
      *
      * Not `CodeUseGraph::markAsPublicApi()` either: EDGE_PUBLIC_API is a STRUCTURAL_EDGES type, and
-     * `ClassLikes::checkClassReferences()` drops every structural edge and re-derives them from these
-     * storage flags — so an edge added here would be discarded before the unused-code walk runs.
+     * `ClassLikes::consolidateAnalyzedData()` drops every structural edge and re-derives them from
+     * these storage flags — so an edge added here would be discarded before the unused-code walk runs.
      *
-     * On a ClassLikeStorage this also exempts the class's public (and non-final protected) members
-     * from unused-member reporting, which is what "this class is Nova's to call" means.
+     * On a ClassLikeStorage the flag reaches further than the class itself: the class's public (and
+     * non-final protected) methods AND properties stop being reported unused, and ClassMustBeFinal is
+     * silenced — hence the find_unused_code gate at the only class-level call site.
      */
     private static function markAsEntryPoint(ClassLikeStorage | MethodStorage $storage): void
     {
         $storage->public_api = true;
     }
 
-    private static function suppress(string $issue, MethodStorage | PropertyStorage $storage): void
+    private static function suppress(string $issue, PropertyStorage $storage): void
     {
         if (!\in_array($issue, $storage->suppressed_issues, true)) {
             $storage->suppressed_issues[] = $issue;
