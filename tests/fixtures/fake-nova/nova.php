@@ -62,6 +62,79 @@ namespace Laravel\Nova {
         use \Laravel\Nova\Makeable;
         use \Laravel\Nova\ProxiesCanSeeToGate;
     }
+
+    trait Authorizable {}
+    trait FillsFields {}
+    trait HasLifecycleMethods {}
+    trait PerformsValidation {}
+    trait ResolvesActions
+    {
+        /** @return list<\Laravel\Nova\Actions\Action> */
+        public function actions(\Laravel\Nova\Http\Requests\NovaRequest $request): array
+        {
+            return [];
+        }
+    }
+    trait ResolvesCards {}
+    trait ResolvesFields {}
+    trait ResolvesFilters {}
+    trait ResolvesLenses {}
+    trait SupportsPolling {}
+
+    trait PerformsQueries
+    {
+        /**
+         * @param \Illuminate\Contracts\Database\Eloquent\Builder $query
+         * @return \Illuminate\Contracts\Database\Eloquent\Builder
+         */
+        public static function relatableQuery(\Laravel\Nova\Http\Requests\NovaRequest $request, $query)
+        {
+            return $query;
+        }
+    }
+
+    abstract class Resource implements \ArrayAccess, \JsonSerializable, \Illuminate\Contracts\Routing\UrlRoutable
+    {
+        use \Laravel\Nova\Authorizable;
+        use \Illuminate\Http\Resources\ConditionallyLoadsAttributes;
+        use \Illuminate\Http\Resources\DelegatesToResource;
+        use \Laravel\Nova\FillsFields;
+        use \Laravel\Nova\HasLifecycleMethods;
+        use \Laravel\Nova\Makeable;
+        use \Laravel\Nova\PerformsQueries;
+        use \Laravel\Nova\PerformsValidation;
+        use \Laravel\Nova\ResolvesActions;
+        use \Laravel\Nova\ResolvesCards;
+        use \Laravel\Nova\ResolvesFields;
+        use \Laravel\Nova\ResolvesFilters;
+        use \Laravel\Nova\ResolvesLenses;
+        use \Laravel\Nova\SupportsPolling;
+
+        /** @return array<string, mixed> */
+        public function jsonSerialize(): array
+        {
+            return [];
+        }
+    }
+}
+
+namespace Laravel\Nova\Actions {
+    class Action implements \JsonSerializable
+    {
+        use \Laravel\Nova\AuthorizedToSee;
+        use \Illuminate\Support\Traits\Macroable;
+        use \Laravel\Nova\Makeable;
+        use \Laravel\Nova\Metable;
+        use \Laravel\Nova\ProxiesCanSeeToGate;
+        use \Illuminate\Support\Traits\Tappable;
+        use \Laravel\Nova\WithComponent;
+
+        /** @return array<string, mixed> */
+        public function jsonSerialize(): array
+        {
+            return [];
+        }
+    }
 }
 
 namespace Laravel\Nova\Contracts {

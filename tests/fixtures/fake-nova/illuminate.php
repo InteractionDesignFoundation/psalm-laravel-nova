@@ -10,6 +10,32 @@ namespace Illuminate\Http {
     class Request {}
 }
 
+namespace Illuminate\Http\Resources {
+    class MissingValue {}
+    trait ConditionallyLoadsAttributes {}
+    /** Laravel satisfies Resource's `ArrayAccess` contract from this trait, not from Nova. */
+    trait DelegatesToResource
+    {
+        public function offsetExists(mixed $offset): bool
+        {
+            return false;
+        }
+
+        public function offsetGet(mixed $offset): mixed
+        {
+            return null;
+        }
+
+        public function offsetSet(mixed $offset, mixed $value): void {}
+
+        public function offsetUnset(mixed $offset): void {}
+    }
+}
+
+namespace Illuminate\Contracts\Routing {
+    interface UrlRoutable {}
+}
+
 namespace Illuminate\Support\Traits {
     trait Conditionable {}
     trait Macroable {}
