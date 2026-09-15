@@ -13,13 +13,16 @@ use PHPUnit\Framework\TestCase;
  * `fake-nova/` holds minimal Laravel/Nova declarations that reproduce the vendor docblocks the
  * plugin's stubs override. Both scenario files are analysed in a single Psalm run.
  *
+ * `scenarios-unused/` needs `findUnusedCode="true"`, which is whole-project, so it gets its own
+ * config and its own run.
+ *
  * @see tests/fixtures/psalm.xml for why the fakes are reached through the composer classmap.
  */
 #[CoversNothing]
 final class AcceptanceTest extends TestCase
 {
-    /** @var list<array{file_name: string, line_from: int, selected_text: string, type: string, message: string}>|null */
-    private static ?array $issues = null;
+    /** @var array<string, list<array{file_name: string, line_from: int, selected_text: string, type: string, message: string}>> */
+    private static array $issuesByConfig = [];
 
     #[Test]
     public function idiomatic_nova_callbacks_are_accepted(): void
@@ -56,6 +59,9 @@ final class AcceptanceTest extends TestCase
                 ['text' => '[new \stdClass()]', 'type' => 'InvalidArgument'],
                 // Tool::canSee() narrowed to NovaRequest would be unsound: Tool can receive a plain Request.
                 ['text' => 'static fn(NovaRequest $request): bool => true', 'type' => 'ArgumentTypeCoercion'],
+                // Marking a resource an entry point silences ClassMustBeFinal, so the plugin only
+                // does it when unused-code analysis is on — which this config's is not.
+                ['text' => 'NonFinalResource', 'type' => 'ClassMustBeFinal'],
             ],
             array_map(
                 static fn(array $issue): array => ['text' => $issue['selected_text'], 'type' => $issue['type']],
@@ -65,20 +71,51 @@ final class AcceptanceTest extends TestCase
         );
     }
 
+    /**
+     * A Nova hook is an entry point, not a silenced report: everything reachable only from one stays
+     * alive, and everything else is still reported.
+     *
+     * The absences matter as much as the issues asserted: `WidgetResource`'s unread property and
+     * uncalled public method are the price of marking a resource an entry point class-wide,
+     * `BaseAuthoredResource::relatableEditors()` is kept alive by per-method marking alone, and the
+     * hooks `FindsTags` / `ArchivesPosts` contribute are marked on the trait's own storage.
+     */
+    #[Test]
+    public function nova_entry_points_keep_their_callees_alive(): void
+    {
+        $issues = $this->issuesIn('scenarios-unused/nova_entry_points.php', 'tests/fixtures/psalm-unused.xml');
+
+        self::assertSame(
+            [
+                // An abstract resource gets no class-level marking, so its own members stay checked.
+                ['text' => 'unmarkedHook', 'type' => 'PossiblyUnusedMethod'],
+                ['text' => 'neverCalled', 'type' => 'UnusedMethod'],
+                // A non-public handle() is unreachable for Nova, so marking skips it.
+                ['text' => 'handle', 'type' => 'UnusedMethod'],
+                ['text' => 'OrphanHelper', 'type' => 'UnusedClass'],
+            ],
+            array_map(
+                static fn(array $issue): array => ['text' => $issue['selected_text'], 'type' => $issue['type']],
+                $issues,
+            ),
+            "Unexpected Psalm issues in nova_entry_points.php:\n".self::describe($issues),
+        );
+    }
+
     /** @return list<array{file_name: string, line_from: int, selected_text: string, type: string, message: string}> */
-    private function issuesIn(string $fixtureRelativePath): array
+    private function issuesIn(string $fixtureRelativePath, string $configPath = 'tests/fixtures/psalm.xml'): array
     {
         return array_values(array_filter(
-            self::psalmIssues(),
+            self::psalmIssues($configPath),
             static fn(array $issue): bool => $issue['file_name'] === $fixtureRelativePath,
         ));
     }
 
     /** @return list<array{file_name: string, line_from: int, selected_text: string, type: string, message: string}> */
-    private static function psalmIssues(): array
+    private static function psalmIssues(string $configPath): array
     {
-        if (self::$issues !== null) {
-            return self::$issues;
+        if (isset(self::$issuesByConfig[$configPath])) {
+            return self::$issuesByConfig[$configPath];
         }
 
         $projectRoot = \dirname(__DIR__);
@@ -98,7 +135,7 @@ final class AcceptanceTest extends TestCase
                     '--no-progress',
                     '--output-format=json',
                     '-c',
-                    'tests/fixtures/psalm.xml',
+                    $configPath,
                 ],
                 [1 => ['pipe', 'w'], 2 => ['file', $stderrFile, 'w']],
                 $pipes,
@@ -126,7 +163,7 @@ final class AcceptanceTest extends TestCase
         $issues = json_decode($stdout, associative: true);
         self::assertIsArray($issues, "Psalm did not return JSON.\nstdout: {$stdout}\nstderr: {$stderr}");
 
-        return self::$issues = $issues;
+        return self::$issuesByConfig[$configPath] = $issues;
     }
 
     /** @param list<array{file_name: string, line_from: int, selected_text: string, type: string, message: string}> $issues */

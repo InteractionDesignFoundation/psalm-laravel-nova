@@ -12,7 +12,8 @@
     ],
     "require": {
         "php": "^8.4",
-        "vimeo/psalm": "^7.0.0-beta19 || dev-master"
+        "psalm/psalm-plugin-api": "^0.2.0",
+        "vimeo/psalm": "^7.0.0-beta20 || dev-master"
     },
     "require-dev": {
         "interaction-design-foundation/coding-standard": "^1.0-RC1",

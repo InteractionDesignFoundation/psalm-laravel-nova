@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<psalm
+    errorLevel="1"
+    resolveFromConfigFile="true"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://getpsalm.org/schema/config"
+    xsi:schemaLocation="https://getpsalm.org/schema/config ../../vendor/vimeo/psalm/config.xsd"
+    findUnusedCode="true"
+>
+    <projectFiles>
+        <directory name="scenarios-unused"/>
+    </projectFiles>
+
+    <!-- A second config rather than findUnusedCode on the main fixture: unused-code analysis is
+         whole-project, so the existing scenarios would have to be kept artificially reachable. -->
+
+    <issueHandlers>
+        <!-- errorLevel 1 purity/immutability advice is orthogonal to what this fixture pins, and a
+             Nova hook is never pure anyway. -->
+        <MissingImmutableAnnotation errorLevel="suppress"/>
+        <MissingPureAnnotation errorLevel="suppress"/>
+        <UnusedParam errorLevel="suppress"/>
+    </issueHandlers>
+
+    <plugins>
+        <pluginClass class="InteractionDesignFoundation\PsalmLaravelNova\Plugin"/>
+    </plugins>
+</psalm>

@@ -13,7 +13,7 @@ use Psalm\Storage\MethodStorage;
 use Psalm\Storage\PropertyStorage;
 
 /**
- * Suppresses PossiblyUnusedProperty / PossiblyUnusedMethod for Laravel Nova conventions.
+ * Teaches Psalm about the Laravel Nova conventions that make a symbol reachable.
  *
  * Nova dispatches Resources, Actions, Filters, Lenses, Cards, Tools, Dashboards and Metrics through
  * reflection and naming conventions that live entirely in `laravel/nova`, not `laravel/framework`, so
@@ -22,18 +22,22 @@ use Psalm\Storage\PropertyStorage;
  * as unused. This mirrors `Psalm\LaravelPlugin\Handlers\SuppressHandler` (the data-table approach), but
  * for Nova base classes.
  *
+ * Two distinct mechanisms, not interchangeable. Unused-code findings are fixed by marking the symbol an
+ * entry point (see markAsEntryPoint), which also keeps whatever the symbol calls alive; everything else
+ * — currently only NonInvariantPropertyType on `$policy` — is a per-symbol issue suppression.
+ *
  * All work happens in afterCodebasePopulated: parent_classes is fully resolved there, and re-reading the
  * AST for the `$policy` bridge stays in the main process (a static map populated during forked scanning
  * would not survive serialisation back to the analysis phase).
  *
  * Preferred order of mechanisms: declare convention members directly on the Nova base-class stub when
- * possible (a subclass's override then inherits the parent's "used" status for free, with no suppression
- * needed here). Fall back to the programmatic suppression below only for members that cannot live on a
- * stub — e.g. the open-ended `relatable*` methods, whose names are not fixed in advance.
+ * possible (a subclass's override then inherits the parent's "used" status for free, with nothing needed
+ * here). Fall back to the programmatic marking below only for members that cannot live on a stub — e.g.
+ * the open-ended `relatable*` methods, whose names are not fixed in advance.
  * @see https://github.com/psalm/psalm-plugin-laravel/issues/867
  * @internal
  */
-final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
+final class NovaConventionsHandler implements AfterCodebasePopulatedInterface
 {
     /**
      * Hook methods Nova invokes by reflection that are *not* declared on the base class (so they are
@@ -44,7 +48,7 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
      * Nova calls the user's `handle()` via `method_exists()` + container dispatch, so a Nova action's
      * `handle()` is a new method with no visible caller. Resource/Filter/Lens/Metric hook methods
      * (`fields()`, `apply()`, `calculate()`, …) override base declarations and are therefore already
-     * considered used — suppressing them would trip `UnusedPsalmSuppress`.
+     * considered used.
      */
     private const METHOD_LEVEL_BY_PARENT_CLASS = [
         'laravel\nova\actions\action' => [
@@ -114,10 +118,26 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
                 continue;
             }
 
-            self::suppressHookMethods($classStorage);
+            self::markHookMethodsAsEntryPoints($classStorage, $provider);
 
             if (isset($classStorage->parent_classes[self::NOVA_RESOURCE])) {
-                self::suppressResourceRelatableMethods($classStorage);
+                // `Nova::resourcesIn(app_path('Nova'))` discovers resources by scanning the
+                // directory, so a concrete resource has no reference anywhere and reports
+                // UnusedClass. Actions / Filters / Lenses / Cards / Metrics are deliberately not
+                // marked: they are instantiated by a resource's `actions()` / `filters()` /
+                // `lenses()` / `cards()`, or listed in NovaServiceProvider, so they do have call
+                // sites. An abstract base resource is reached through its concrete children.
+                //
+                // Gated on unused-code analysis being on, unlike every other marking here: a
+                // class-level entry point also silences ClassMustBeFinal, which Psalm emits
+                // outside its find_unused_code guard. Without the gate this would swallow that
+                // issue for every Nova resource in every project, including the majority that
+                // never enable findUnusedCode.
+                if (!$classStorage->abstract && $codebase->find_unused_code !== null) {
+                    self::markAsEntryPoint($classStorage);
+                }
+
+                self::markResourceRelatableMethodsAsEntryPoints($classStorage, $provider);
 
                 $policyProperty = $classStorage->properties[self::POLICY_PROPERTY] ?? null;
                 if ($policyProperty instanceof PropertyStorage) {
@@ -134,7 +154,7 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
                         self::suppress('NonInvariantPropertyType', $policyProperty);
                     }
 
-                    self::suppressPolicyMethods($classStorage, $codebase);
+                    self::markPolicyMethodsAsEntryPoints($classStorage, $codebase);
                 }
             }
         }
@@ -211,53 +231,100 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
         $storage->initialized_properties[$propertyName] = true;
     }
 
-    private static function suppressHookMethods(ClassLikeStorage $classStorage): void
-    {
+    private static function markHookMethodsAsEntryPoints(
+        ClassLikeStorage $classStorage,
+        ClassLikeStorageProvider $provider
+    ): void {
         foreach (self::METHOD_LEVEL_BY_PARENT_CLASS as $parentClass => $methodNames) {
             if (!isset($classStorage->parent_classes[$parentClass])) {
                 continue;
             }
 
             foreach ($methodNames as $methodName) {
-                $methodStorage = $classStorage->methods[$methodName] ?? null;
+                $methodStorage = self::resolveMethodStorage($classStorage, $methodName, $provider);
                 if ($methodStorage instanceof MethodStorage) {
-                    self::suppressPublicMethod($methodStorage);
+                    self::markPublicMethodAsEntryPoint($methodStorage);
                 }
             }
         }
     }
 
     /**
-     * Suppress PossiblyUnusedMethod for `relatable{Resources}()` query methods on a Resource.
+     * The storage Psalm will read `public_api` from for a method appearing on this class.
+     *
+     * `ClassLikeStorage::$methods` holds only the methods the class declares itself, so a hook a Nova
+     * app shares through a trait (`use PublishesPost;`) is absent from it and writing the flag on the
+     * using class would be a no-op — Psalm reads it from the *declaring* storage, i.e. the trait's.
+     * This mirrors the same fallback in `ClassLikes::checkMethodReferences()`.
+     * @psalm-mutation-free
+     */
+    private static function resolveMethodStorage(
+        ClassLikeStorage $classStorage,
+        string $methodName,
+        ClassLikeStorageProvider $provider
+    ): ?MethodStorage {
+        $methodStorage = $classStorage->methods[$methodName] ?? null;
+        if ($methodStorage instanceof MethodStorage) {
+            return $methodStorage;
+        }
+
+        $declaringMethodId = $classStorage->declaring_method_ids[$methodName] ?? null;
+        if ($declaringMethodId === null || !$provider->has($declaringMethodId->fq_class_name)) {
+            return null;
+        }
+
+        return $provider->get($declaringMethodId->fq_class_name)->methods[$declaringMethodId->method_name] ?? null;
+    }
+
+    /**
+     * Mark `relatable{Resources}()` query methods on a Resource as entry points.
      *
      * Nova resolves `static::relatable{FieldName}($request, $query)` by reflection when building the
      * options for a relationship field (BelongsToMany / MorphToMany / HasMany etc.), so there is no
      * direct call site for Psalm to discover. The name is open-ended (one method per relationship
      * field), so match the prefix rather than enumerate. Method keys are stored lowercase.
      *
+     * Iterating `appearing_method_ids` rather than `methods` so a hook shared through a trait is seen
+     * too; the filter on the appearing class keeps an inherited hook attributed to the ancestor that
+     * declares it, which this loop reaches on its own pass.
+     *
      * `relatableQuery` itself is excluded: it overrides `Laravel\Nova\Resource::relatableQuery`, so it
-     * inherits the parent's "used" status and is never flagged — suppressing it would be unused.
+     * inherits the parent's "used" status and is never flagged.
+     *
+     * A concrete Resource is already marked an entry point class-wide, which covers its public methods;
+     * this stays for the abstract intermediate base classes that marking deliberately skips.
      *
      * Known limitation: the prefix match cannot distinguish a genuine `relatable{Field}()` hook from a
      * method that merely happens to start with "relatable" but corresponds to no relationship field, so
-     * a truly unused method with that name would be silently suppressed too. Accepted trade-off: the
-     * name collision is improbable, and a false PossiblyUnusedMethod on a real Nova hook is worse.
+     * a truly unused method with that name would be kept alive too. Accepted trade-off: the name
+     * collision is improbable, and a false PossiblyUnusedMethod on a real Nova hook is worse.
      */
-    private static function suppressResourceRelatableMethods(ClassLikeStorage $classStorage): void
-    {
-        foreach ($classStorage->methods as $methodName => $methodStorage) {
-            if (\str_starts_with($methodName, 'relatable') && $methodName !== 'relatablequery') {
-                self::suppressPublicMethod($methodStorage);
+    private static function markResourceRelatableMethodsAsEntryPoints(
+        ClassLikeStorage $classStorage,
+        ClassLikeStorageProvider $provider
+    ): void {
+        foreach ($classStorage->appearing_method_ids as $methodName => $appearingMethodId) {
+            if ($appearingMethodId->fq_class_name !== $classStorage->name) {
+                continue;
+            }
+
+            if (!\str_starts_with($methodName, 'relatable') || $methodName === 'relatablequery') {
+                continue;
+            }
+
+            $methodStorage = self::resolveMethodStorage($classStorage, $methodName, $provider);
+            if ($methodStorage instanceof MethodStorage) {
+                self::markPublicMethodAsEntryPoint($methodStorage);
             }
         }
     }
 
     /**
-     * Follow the Resource's `public static $policy = SomePolicy::class` to the policy FQCN and suppress
-     * the standard Gate methods on it. The value is read from the AST: a typed `$policy` property keeps
-     * its declared `string` type in storage, so the concrete class-string is not recoverable there.
+     * Follow the Resource's `public static $policy = SomePolicy::class` to the policy FQCN and mark the
+     * standard Gate methods on it. The value is read from the AST: a typed `$policy` property keeps its
+     * declared `string` type in storage, so the concrete class-string is not recoverable there.
      */
-    private static function suppressPolicyMethods(ClassLikeStorage $classStorage, Codebase $codebase): void
+    private static function markPolicyMethodsAsEntryPoints(ClassLikeStorage $classStorage, Codebase $codebase): void
     {
         $policyClass = StaticClassPropertyResolver::resolve($classStorage, $codebase, self::POLICY_PROPERTY);
         if ($policyClass === null) {
@@ -271,24 +338,48 @@ final class NovaSuppressHandler implements AfterCodebasePopulatedInterface
 
         $policyStorage = $provider->get($policyClass);
         foreach (self::POLICY_METHODS as $methodName) {
-            $methodStorage = $policyStorage->methods[$methodName] ?? null;
+            $methodStorage = self::resolveMethodStorage($policyStorage, $methodName, $provider);
             if ($methodStorage instanceof MethodStorage) {
-                self::suppressPublicMethod($methodStorage);
+                self::markPublicMethodAsEntryPoint($methodStorage);
             }
         }
     }
 
-    /** Suppress only public methods: Nova dispatches its hooks via reflection / `$instance->method()`, which requires public visibility. A non-public override is a real bug. */
-    private static function suppressPublicMethod(MethodStorage $methodStorage): void
+    /** Only public methods: Nova dispatches its hooks via reflection / `$instance->method()`, which requires public visibility. A non-public override is a real bug. */
+    private static function markPublicMethodAsEntryPoint(MethodStorage $methodStorage): void
     {
         if ($methodStorage->visibility !== ClassLikeAnalyzer::VISIBILITY_PUBLIC) {
             return;
         }
 
-        self::suppress('PossiblyUnusedMethod', $methodStorage);
+        self::markAsEntryPoint($methodStorage);
     }
 
-    private static function suppress(string $issue, MethodStorage | PropertyStorage $storage): void
+    /**
+     * Flag a symbol as reachable from outside the analysed code — the same signal an `@api` docblock
+     * carries.
+     *
+     * Not `suppressed_issues[] = 'PossiblyUnusedMethod'`: since psalm-plugin-api 0.2.0 a suppressed
+     * unused-code issue only silences the report for that one symbol, so a private helper called
+     * *only* from a Nova hook is still reported UnusedMethod. An entry point seeds the reachability
+     * walk instead, keeping the hook's callees alive.
+     *
+     * Not `CodeUseGraph::markAsPublicApi()` either: EDGE_PUBLIC_API is a STRUCTURAL_EDGES type, and
+     * `ClassLikes::consolidateAnalyzedData()` drops every structural edge and re-derives them from
+     * these storage flags — so an edge added here would be discarded before the unused-code walk runs.
+     *
+     * On a ClassLikeStorage the flag reaches further than the class itself: the class's public (and
+     * non-final protected) methods AND properties stop being reported unused, and ClassMustBeFinal is
+     * silenced — hence the find_unused_code gate at the only class-level call site. Residue of that
+     * gate: the same resource gets two different ClassMustBeFinal answers depending on a switch that
+     * has nothing to do with finality.
+     */
+    private static function markAsEntryPoint(ClassLikeStorage | MethodStorage $storage): void
+    {
+        $storage->public_api = true;
+    }
+
+    private static function suppress(string $issue, PropertyStorage $storage): void
     {
         if (!\in_array($issue, $storage->suppressed_issues, true)) {
             $storage->suppressed_issues[] = $issue;
