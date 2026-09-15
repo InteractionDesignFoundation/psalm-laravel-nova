@@ -75,9 +75,10 @@ final class AcceptanceTest extends TestCase
      * A Nova hook is an entry point, not a silenced report: everything reachable only from one stays
      * alive, and everything else is still reported.
      *
-     * The absences matter as much as the two issues asserted: `WidgetResource`'s unread property and
-     * uncalled public method are the price of marking a resource an entry point class-wide, and
-     * `BaseAuthoredResource::relatableEditors()` is kept alive by per-method marking alone.
+     * The absences matter as much as the issues asserted: `WidgetResource`'s unread property and
+     * uncalled public method are the price of marking a resource an entry point class-wide,
+     * `BaseAuthoredResource::relatableEditors()` is kept alive by per-method marking alone, and the
+     * hooks `FindsTags` / `ArchivesPosts` contribute are marked on the trait's own storage.
      */
     #[Test]
     public function nova_entry_points_keep_their_callees_alive(): void
@@ -86,7 +87,11 @@ final class AcceptanceTest extends TestCase
 
         self::assertSame(
             [
+                // An abstract resource gets no class-level marking, so its own members stay checked.
+                ['text' => 'unmarkedHook', 'type' => 'PossiblyUnusedMethod'],
                 ['text' => 'neverCalled', 'type' => 'UnusedMethod'],
+                // A non-public handle() is unreachable for Nova, so marking skips it.
+                ['text' => 'handle', 'type' => 'UnusedMethod'],
                 ['text' => 'OrphanHelper', 'type' => 'UnusedClass'],
             ],
             array_map(

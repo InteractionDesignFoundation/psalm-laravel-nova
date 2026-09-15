@@ -8,15 +8,55 @@ use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Resource;
 
+/** Sharing a `relatable*()` hook across resources through a trait is ordinary Nova code. */
+trait FindsTags
+{
+    /** @param Builder $query */
+    public static function relatableTags(NovaRequest $request, $query): Builder
+    {
+        return self::publishedOnly($query);
+    }
+
+    /** Only reachable from the reflection-dispatched `relatableTags()`. */
+    private static function publishedOnly(Builder $query): Builder
+    {
+        return $query;
+    }
+}
+
+/** Likewise for an action's `handle()`, shared by every action that does the same work. */
+trait ArchivesPosts
+{
+    /** @param iterable<int, Post> $models */
+    public function handle(iterable $models): void
+    {
+        foreach ($models as $model) {
+            self::archive($model);
+        }
+    }
+
+    /** Only reachable from the container-dispatched `handle()`. */
+    private static function archive(Post $post): void
+    {
+        $post->published = false;
+    }
+}
+
 /**
  * An abstract intermediate resource, which the class-level marking deliberately skips. Its
- * `relatable*()` hook is therefore kept alive only by the per-method marking, and nothing else in
- * this fixture would catch that marking being dropped.
+ * `relatable*()` hooks are therefore kept alive only by the per-method marking, and nothing else in
+ * this fixture would catch that marking being dropped. A trait-provided hook is here too: its
+ * storage lives on the trait, so marking the using class would be a no-op.
  *
  * @extends Resource<Post>
  */
 abstract class BaseAuthoredResource extends Resource
 {
+    use FindsTags;
+
+    /** Not a Nova hook and not marked by anything: an abstract resource's members are still checked. */
+    public function unmarkedHook(): void {}
+
     /** @param Builder $query */
     public static function relatableEditors(NovaRequest $request, $query): Builder
     {
@@ -49,7 +89,7 @@ final class PostResource extends BaseAuthoredResource
     #[\Override]
     public function actions(NovaRequest $request): array
     {
-        return [new PublishPost()];
+        return [new PublishPost(), new ArchivePost(), new ReviewPost()];
     }
 
     /** @param Builder $query */
@@ -84,6 +124,21 @@ final class PublishPost extends Action
     {
         $post->published = true;
     }
+}
+
+/** The same hook, reached through a trait: the flag has to land on the trait's storage. */
+final class ArchivePost extends Action
+{
+    use ArchivesPosts;
+}
+
+/**
+ * Nova dispatches `handle()` on an instance, so a non-public one is never reached and is a real
+ * bug. Marking must skip it, leaving UnusedMethod to report.
+ */
+final class ReviewPost extends Action
+{
+    private function handle(): void {}
 }
 
 /** Gate methods are routed through `Resource::authorizedTo()`, never called directly. */
