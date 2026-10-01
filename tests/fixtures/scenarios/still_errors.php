@@ -3,7 +3,13 @@
 namespace Scenarios;
 
 use App\Models\Post;
+use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
+use Laravel\Nova\Actions\ActionEvent;
+use Laravel\Nova\Fields\ActionFields;
+use Laravel\Nova\Fields\Email;
+use Laravel\Nova\Fields\FormData;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Filters\Filter;
@@ -85,6 +91,37 @@ final class BrokenNonFieldElements extends Action
         $this->canSee(static fn(int $request): bool => true);
         $filter->canSee(static fn(\stdClass $request): bool => true);
         $lens->canSee(static fn(string $request): bool => true);
+    }
+}
+
+/**
+ * The action, action-event and dependent-field stubs bind types, they do not widen them: a callback
+ * or collection that cannot match is still reported.
+ */
+final class BrokenActionsAndDependentFields
+{
+    public function register(Authenticatable $user): void
+    {
+        // Nova passes int-keyed collections, not string-keyed ones.
+        Action::using('A', /** @param Collection<string, Post> $posts */ static fn(ActionFields $fields, Collection $posts): int => 1);
+        // The first argument is the ActionFields, not a scalar.
+        Action::using('B', /** @param Collection<int, Post> $posts */ static fn(int $fields, Collection $posts): int => 1);
+        // The second argument is a collection of models, not a model.
+        Action::using('C', static fn(ActionFields $fields, Post $post): int => 1);
+        // Arity: Nova passes two arguments, a third required param can never be satisfied.
+        (new Action())->handleUsing(/** @param Collection<int, Post> $posts */ static fn(ActionFields $fields, Collection $posts, int $extra): int => 1);
+
+        // A collection is required, whatever it holds.
+        ActionEvent::forResourceDelete($user, new \stdClass());
+
+        // The form data is a FormData, nothing else.
+        Text::make('F')->dependsOn('x', static function (Text $field, NovaRequest $request, \stdClass $formData): void {});
+        // `static` is the concrete field: a Text is not an Email.
+        Text::make('G')->dependsOn('x', static function (Email $field, NovaRequest $request, FormData $formData): void {});
+        // Arity: a fourth required param can never be satisfied.
+        Text::make('H')->dependsOnCreating('x', static function (Text $field, NovaRequest $request, FormData $formData, int $extra): void {});
+        // The request is a NovaRequest.
+        Text::make('I')->dependsOnUpdating('x', static function (Text $field, \stdClass $request, FormData $formData): void {});
     }
 }
 

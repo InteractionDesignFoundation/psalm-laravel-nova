@@ -26,6 +26,35 @@ class Action implements \JsonSerializable
     }
 
     /**
+     * Nova types the models argument as a bare `Collection` (`Collection<array-key, mixed>` to Psalm),
+     * so a callback typed against its own models is rejected. Nova passes an ActionModelCollection
+     * filled from a database cursor (ActionRequest::chunks()), so its keys are always ints. `TKey`
+     * lets a callback that accepts any key (`Collection<array-key, Post>`) keep matching, while
+     * `int|TKey` still rejects a callback that only takes string keys. `TModel` is deliberately
+     * unbounded: with a bound (`of Model`) a callback with no generic annotation would get
+     * `Collection<array-key, Model>` instead of Nova's `Collection<array-key, mixed>`, and an invariant
+     * Collection stub would then reject forwarding it to a `Collection<array-key, mixed>` parameter.
+     *
+     * @template TKey of array-key
+     * @template TModel
+     * @param \Stringable|string $name
+     * @param \Closure(\Laravel\Nova\Fields\ActionFields, \Illuminate\Support\Collection<int|TKey, TModel>):mixed $handleUsing
+     */
+    public static function using($name, \Closure $handleUsing): static
+    {
+    }
+
+    /**
+     * @template TKey of array-key
+     * @template TModel
+     * @param \Closure(\Laravel\Nova\Fields\ActionFields, \Illuminate\Support\Collection<int|TKey, TModel>):mixed $callback
+     * @return $this
+     */
+    public function handleUsing(\Closure $callback)
+    {
+    }
+
+    /**
      * Return a dangerous message response from the action.
      *
      * @param string $name

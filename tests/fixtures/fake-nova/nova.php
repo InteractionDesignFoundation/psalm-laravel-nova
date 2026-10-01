@@ -135,6 +135,120 @@ namespace Laravel\Nova\Actions {
         use \Illuminate\Support\Traits\Tappable;
         use \Laravel\Nova\WithComponent;
 
+        /**
+         * @param \Stringable|string $name
+         * @param \Closure(\Laravel\Nova\Fields\ActionFields, \Illuminate\Support\Collection):(mixed) $handleUsing
+         */
+        public static function using($name, \Closure $handleUsing): static
+        {
+            return new static();
+        }
+
+        /**
+         * @param \Closure(\Laravel\Nova\Fields\ActionFields, \Illuminate\Support\Collection):(mixed) $callback
+         * @return $this
+         */
+        public function handleUsing(\Closure $callback)
+        {
+            return $this;
+        }
+
+        /** @return array<string, mixed> */
+        public function jsonSerialize(): array
+        {
+            return [];
+        }
+    }
+}
+
+namespace Laravel\Nova\Actions {
+    /**
+     * Mirrors the Nova 5.11 signatures of the members the scenarios touch. The three soft-delete
+     * factories take (and return) a bare `Collection`; the rest are never stubbed and only prove the
+     * partial ActionEvent stub is merged with the real class instead of replacing it.
+     */
+    class ActionEvent extends \Illuminate\Database\Eloquent\Model
+    {
+        /**
+         * @param \Illuminate\Contracts\Auth\Authenticatable $user
+         * @param \Illuminate\Database\Eloquent\Model $model
+         * @return static
+         */
+        public static function forResourceCreate($user, $model)
+        {
+            return new static();
+        }
+
+        /**
+         * @param \Illuminate\Contracts\Auth\Authenticatable $user
+         */
+        public static function forResourceDelete($user, \Illuminate\Support\Collection $models): \Illuminate\Support\Collection
+        {
+            return new \Illuminate\Support\Collection();
+        }
+
+        /**
+         * @param \Illuminate\Contracts\Auth\Authenticatable $user
+         */
+        public static function forResourceRestore($user, \Illuminate\Support\Collection $models): \Illuminate\Support\Collection
+        {
+            return new \Illuminate\Support\Collection();
+        }
+
+        /**
+         * @param \Illuminate\Contracts\Auth\Authenticatable $user
+         */
+        public static function forSoftDeleteAction(string $action, $user, \Illuminate\Support\Collection $models): \Illuminate\Support\Collection
+        {
+            return new \Illuminate\Support\Collection();
+        }
+
+        public static function markBatchAsRunning(string $batchId): int
+        {
+            return 0;
+        }
+    }
+
+    class ActionResponse implements \ArrayAccess, \JsonSerializable
+    {
+        use \Laravel\Nova\Makeable;
+
+        /**
+         * Create a new response using `message`.
+         *
+         * @return static
+         */
+        public static function message(\Stringable|string $message)
+        {
+            return new static();
+        }
+
+        /**
+         * @param string $offset
+         */
+        public function offsetExists($offset): bool
+        {
+            return false;
+        }
+
+        /**
+         * @param string $offset
+         */
+        public function offsetGet($offset): mixed
+        {
+            return null;
+        }
+
+        /**
+         * @param string $offset
+         */
+        public function offsetSet($offset, $value): void {}
+
+        /**
+         * @param string $offset
+         */
+        public function offsetUnset($offset): void {}
+
         /** @return array<string, mixed> */
         public function jsonSerialize(): array
         {
@@ -197,6 +311,12 @@ namespace Laravel\Nova\Contracts {
 
 namespace Laravel\Nova\Support {
     class Fluent {}
+
+    /**
+     * @template TKey of array-key
+     * @template TValue
+     */
+    abstract class FluentDecorator {}
 }
 
 namespace Laravel\Nova\Metrics {
@@ -229,6 +349,48 @@ namespace Laravel\Nova\Fields {
     trait PeekableFields {}
     trait PreviewableFields {}
     trait SupportsFullWidthFields {}
+
+    /**
+     * @template TKey of array-key
+     * @template TValue
+     *
+     * @extends \Laravel\Nova\Support\FluentDecorator<TKey, TValue>
+     */
+    class FormData extends \Laravel\Nova\Support\FluentDecorator {}
+
+    /** Nova's own docblocks type the callback's form data as a bare `FormData`. */
+    trait SupportsDependentFields
+    {
+        /**
+         * @param \Laravel\Nova\Fields\Field|array<int, string|\Laravel\Nova\Fields\Field>|string $attributes
+         * @param (callable(static, \Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Fields\FormData):(void))|class-string $mixin
+         * @return $this
+         */
+        public function dependsOn(Field|array|string $attributes, callable|string $mixin)
+        {
+            return $this;
+        }
+
+        /**
+         * @param \Laravel\Nova\Fields\Field|array<int, string|\Laravel\Nova\Fields\Field>|string $attributes
+         * @param (callable(static, \Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Fields\FormData):(void))|class-string $mixin
+         * @return $this
+         */
+        public function dependsOnCreating(Field|array|string $attributes, callable|string $mixin)
+        {
+            return $this;
+        }
+
+        /**
+         * @param string|\Laravel\Nova\Fields\Field|array<int, string|\Laravel\Nova\Fields\Field> $attributes
+         * @param (callable(static, \Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Fields\FormData):(void))|class-string $mixin
+         * @return $this
+         */
+        public function dependsOnUpdating($attributes, $mixin)
+        {
+            return $this;
+        }
+    }
 
     trait Filterable
     {
@@ -359,6 +521,21 @@ namespace Laravel\Nova\Fields {
     class Text extends \Laravel\Nova\Fields\Field
     {
         use \Laravel\Nova\Fields\Filterable;
+        use \Laravel\Nova\Fields\SupportsDependentFields;
+    }
+
+    class Email extends \Laravel\Nova\Fields\Text
+    {
+        use \Laravel\Nova\Fields\SupportsDependentFields;
+
+        /**
+         * Create a new field.
+         *
+         * @param  \Stringable|string|null  $name
+         * @param  string|callable|object|null  $attribute
+         * @param  (callable(mixed, mixed, ?string):(mixed))|null  $resolveCallback
+         */
+        public function __construct($name = null, mixed $attribute = 'email', ?callable $resolveCallback = null) {}
     }
 
     class Stack extends \Laravel\Nova\Fields\Field

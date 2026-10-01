@@ -74,6 +74,24 @@ final class AcceptanceTest extends TestCase
                 ['text' => 'static fn(int $request): bool => true', 'type' => 'InvalidArgument'],
                 ['text' => 'static fn(\stdClass $request): bool => true', 'type' => 'InvalidArgument'],
                 ['text' => 'static fn(string $request): bool => true', 'type' => 'InvalidArgument'],
+                // Action::using()/handleUsing() infer the models from the callback, but Nova passes an
+                // int-keyed collection of models: a string key is wrong...
+                ['text' => 'static fn(ActionFields $fields, Collection $posts): int => 1', 'type' => 'InvalidArgument'],
+                // ...as is a non-ActionFields first param...
+                ['text' => 'static fn(int $fields, Collection $posts): int => 1', 'type' => 'InvalidArgument'],
+                // ...a model where the collection goes...
+                ['text' => 'static fn(ActionFields $fields, Post $post): int => 1', 'type' => 'InvalidArgument'],
+                // ...and a third required param (a callable demanding more params than the signature
+                // passes is reported as InvalidScalarArgument).
+                ['text' => 'static fn(ActionFields $fields, Collection $posts, int $extra): int => 1', 'type' => 'InvalidScalarArgument'],
+                // ActionEvent's factories take a collection, whatever it holds.
+                ['text' => 'new \stdClass()', 'type' => 'InvalidArgument'],
+                // dependsOn*() callbacks: the third param is a FormData, `static` is the concrete field,
+                // and arity and request type are still checked.
+                ['text' => 'static function (Text $field, NovaRequest $request, \stdClass $formData): void {}', 'type' => 'InvalidArgument'],
+                ['text' => 'static function (Email $field, NovaRequest $request, FormData $formData): void {}', 'type' => 'ArgumentTypeCoercion'],
+                ['text' => 'static function (Text $field, NovaRequest $request, FormData $formData, int $extra): void {}', 'type' => 'InvalidScalarArgument'],
+                ['text' => 'static function (Text $field, \stdClass $request, FormData $formData): void {}', 'type' => 'InvalidArgument'],
                 // Marking a resource an entry point silences ClassMustBeFinal, so the plugin only
                 // does it when unused-code analysis is on — which this config's is not.
                 ['text' => 'NonFinalResource', 'type' => 'ClassMustBeFinal'],
