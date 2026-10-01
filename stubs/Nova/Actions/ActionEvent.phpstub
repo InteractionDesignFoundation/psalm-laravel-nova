@@ -1,0 +1,40 @@
+<?php
+
+namespace Laravel\Nova\Actions;
+
+/**
+ * Nova types `$models` as a bare `Collection`, which Psalm reads as `Collection<array-key, mixed>` and,
+ * Collection being invariant under some stub sets, rejects any concretely typed collection of models.
+ * The inputs are therefore generic so that a typed model collection is accepted. `TModel` is deliberately
+ * unbounded: a bound (`of Model`) would make a bare `Collection` argument a MixedArgumentTypeCoercion.
+ *
+ * The return type is kept exactly as Nova declares it (`Collection<array-key, mixed>`): narrowing it
+ * (e.g. to `Collection<TKey, static>`) breaks consumers that forward the result to a parameter typed
+ * with a broad, invariant `Collection<array-key, mixed>`.
+ */
+class ActionEvent extends \Illuminate\Database\Eloquent\Model
+{
+    /**
+     * @template TKey of array-key
+     * @template TModel
+     * @param \Illuminate\Contracts\Auth\Authenticatable $user
+     * @param \Illuminate\Support\Collection<TKey, TModel> $models
+     */
+    public static function forResourceDelete($user, \Illuminate\Support\Collection $models): \Illuminate\Support\Collection {}
+
+    /**
+     * @template TKey of array-key
+     * @template TModel
+     * @param \Illuminate\Contracts\Auth\Authenticatable $user
+     * @param \Illuminate\Support\Collection<TKey, TModel> $models
+     */
+    public static function forResourceRestore($user, \Illuminate\Support\Collection $models): \Illuminate\Support\Collection {}
+
+    /**
+     * @template TKey of array-key
+     * @template TModel
+     * @param \Illuminate\Contracts\Auth\Authenticatable $user
+     * @param \Illuminate\Support\Collection<TKey, TModel> $models
+     */
+    public static function forSoftDeleteAction(string $action, $user, \Illuminate\Support\Collection $models): \Illuminate\Support\Collection {}
+}
