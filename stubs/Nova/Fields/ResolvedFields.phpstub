@@ -1,0 +1,25 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+use Illuminate\Support\Collection;
+
+/**
+ * Nova hints both constructor params as bare `Collection`, which Psalm reads as the invariant
+ * `Collection<array-key, mixed>`, so `collect(['target_id' => $id])` (a `Collection<'target_id', int>`)
+ * is rejected. The constructor only reads them, so binding method templates accepts any collection.
+ *
+ * @extends \Illuminate\Support\Fluent<array-key, mixed>
+ */
+class ResolvedFields extends \Illuminate\Support\Fluent
+{
+    /**
+     * @template TAttributeKey of array-key
+     * @template TAttributeValue
+     * @template TCallbackKey of array-key
+     * @template TCallbackValue
+     * @param Collection<TAttributeKey, TAttributeValue> $attributes
+     * @param Collection<TCallbackKey, TCallbackValue> $callbacks
+     */
+    public function __construct(Collection $attributes, Collection $callbacks) {}
+}
