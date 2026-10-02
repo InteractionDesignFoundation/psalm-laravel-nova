@@ -6,6 +6,8 @@ use App\Models\Post;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Fields\Line;
 use Laravel\Nova\Fields\Stack;
@@ -75,5 +77,14 @@ final class UsesFieldWithOwnAuthorization
         return [
             (new FieldWithOwnAuthorization('Name'))->canSee(static fn(Request $request): bool => true),
         ];
+    }
+}
+
+/** Nova hints ResolvedFields' constructor params as bare Collection; a non-literal value must still pass. */
+final class BuildsActionFields
+{
+    public function build(int $targetId): ActionFields
+    {
+        return new ActionFields(new Collection(['target_id' => $targetId]), new Collection([]));
     }
 }

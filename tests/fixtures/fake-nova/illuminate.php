@@ -36,6 +36,25 @@ namespace Illuminate\Contracts\Routing {
     interface UrlRoutable {}
 }
 
+namespace Illuminate\Support {
+    /**
+     * Invariant in both params, like psalm-plugin-laravel's Collection stub.
+     * @template TKey of array-key
+     * @template TValue
+     */
+    class Collection
+    {
+        /** @param array<TKey, TValue> $items */
+        public function __construct(array $items = []) {}
+    }
+
+    /**
+     * @template TKey of array-key
+     * @template TValue
+     */
+    class Fluent {}
+}
+
 namespace Illuminate\Support\Traits {
     trait Conditionable {}
     trait Macroable {}

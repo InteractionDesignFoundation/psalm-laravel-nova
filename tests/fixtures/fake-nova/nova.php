@@ -154,6 +154,14 @@ namespace Laravel\Nova\Http\Requests {
 }
 
 namespace Laravel\Nova\Fields {
+    /** @extends \Illuminate\Support\Fluent<array-key, mixed> */
+    class ResolvedFields extends \Illuminate\Support\Fluent
+    {
+        public function __construct(\Illuminate\Support\Collection $attributes, \Illuminate\Support\Collection $callbacks) {}
+    }
+
+    class ActionFields extends \Laravel\Nova\Fields\ResolvedFields {}
+
     trait DependentFields {}
     trait HandlesValidation {}
     trait MutableFields {}

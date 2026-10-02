@@ -36,6 +36,7 @@ final class Plugin implements PluginEntryPointInterface
         $registration->addStubFile($stubsDir.'/Fields/Field.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/FieldElement.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Filterable.phpstub');
+        $registration->addStubFile($stubsDir.'/Fields/ResolvedFields.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Stack.phpstub');
         $registration->addStubFile($stubsDir.'/Element.phpstub');
         $registration->addStubFile($stubsDir.'/Metrics/PartitionResult.phpstub');
