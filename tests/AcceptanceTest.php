@@ -55,6 +55,17 @@ final class AcceptanceTest extends TestCase
                 ],
                 // Stack line is not a valid class-string<Field>|callable|Field.
                 ['text' => '[42]', 'type' => 'InvalidArgument'],
+                // make() resolve callback: Nova always passes a string attribute.
+                ['text' => "static fn(mixed \$value, Post \$resource, int \$attribute): string => 'nope'", 'type' => 'InvalidScalarArgument'],
+                // make() resolve callback: the resource param must satisfy the Model|Fluent|array|object bound.
+                ['text' => "static fn(mixed \$value, int \$resource, string \$attribute): string => 'nope'", 'type' => 'InvalidArgument'],
+                // make() resolve callback: a fourth required param can never be satisfied (Psalm reports
+                // a callable demanding more params than the signature passes as InvalidScalarArgument).
+                ['text' => "static fn(mixed \$value, Post \$resource, string \$attribute, mixed \$extra): string => 'nope'", 'type' => 'InvalidScalarArgument'],
+                // resolveUsing(): same attribute check as make().
+                ['text' => "static fn(mixed \$value, Post \$resource, int \$attribute): string => 'nope'", 'type' => 'InvalidScalarArgument'],
+                // displayUsing(): same arity check as make().
+                ['text' => "static fn(mixed \$value, Post \$resource, string \$attribute, mixed \$extra): string => 'nope'", 'type' => 'InvalidScalarArgument'],
                 // Stack line via $lines is not a valid class-string<Field>|callable|Field either.
                 ['text' => '[new \stdClass()]', 'type' => 'InvalidArgument'],
                 // Tool::canSee() narrowed to NovaRequest would be unsound: Tool can receive a plain Request.

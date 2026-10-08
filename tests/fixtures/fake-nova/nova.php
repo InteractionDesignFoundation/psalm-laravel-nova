@@ -321,11 +321,40 @@ namespace Laravel\Nova\Fields {
         /**
          * @param \Stringable|string $name
          * @param string|callable|object|null $attribute
+         * @param (callable(mixed, mixed, ?string):(mixed))|null $resolveCallback
          */
         public function __construct($name, $attribute = null, ?callable $resolveCallback = null) {}
+
+        /**
+         * @param callable(mixed, mixed, string):mixed $displayCallback
+         * @return $this
+         */
+        public function displayUsing(callable $displayCallback)
+        {
+            return $this;
+        }
+
+        /**
+         * @param callable(mixed, mixed, ?string):mixed $resolveCallback
+         * @return $this
+         */
+        public function resolveUsing(callable $resolveCallback)
+        {
+            return $this;
+        }
     }
 
     class Line extends \Laravel\Nova\Fields\Field {}
+
+    class DateTime extends \Laravel\Nova\Fields\Field
+    {
+        /**
+         * @param \Stringable|string $name
+         * @param string|callable|object|null $attribute
+         * @param (callable(mixed, mixed, ?string):(mixed))|null $resolveCallback
+         */
+        public function __construct($name, mixed $attribute = null, ?callable $resolveCallback = null) {}
+    }
 
     class Text extends \Laravel\Nova\Fields\Field
     {

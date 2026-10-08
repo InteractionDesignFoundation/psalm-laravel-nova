@@ -23,4 +23,25 @@ abstract class Field extends \Laravel\Nova\Fields\FieldElement implements \JsonS
     use \Laravel\Nova\Fields\PreviewableFields;
     use \Laravel\Nova\Fields\SupportsFullWidthFields;
     use \Illuminate\Support\Traits\Tappable;
+
+    /**
+     * Nova invokes the callback as `call_user_func($displayCallback, $value, $resource, $attribute)` with a
+     * non-null `$attribute` (`resolveForDisplay()` defaults it to `$this->attribute`), and the resource
+     * is the field's model/pivot/repeater row. Same bounded template and trade-off as `FieldElement`.
+     *
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(mixed, TResource, string):mixed $displayCallback
+     * @return $this
+     */
+    public function displayUsing(callable $displayCallback) {}
+
+    /**
+     * Nova's docblock says `?string` for the attribute, but `resolve()` defaults it to `$this->attribute`
+     * before invoking the callback, so it is never null. Same bounded template as `displayUsing()`.
+     *
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(mixed, TResource, string):mixed $resolveCallback
+     * @return $this
+     */
+    public function resolveUsing(callable $resolveCallback) {}
 }
