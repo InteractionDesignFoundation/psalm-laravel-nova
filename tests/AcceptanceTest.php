@@ -66,6 +66,15 @@ final class AcceptanceTest extends TestCase
                 // Marking a resource an entry point silences ClassMustBeFinal, so the plugin only
                 // does it when unused-code analysis is on — which this config's is not.
                 ['text' => 'NonFinalResource', 'type' => 'ClassMustBeFinal'],
+                // Property forwarding resolves only what the model declares: a typo is still a typo,
+                // read from inside the resource ...
+                ['text' => '$this->doesNotExist', 'type' => 'UndefinedThisPropertyFetch'],
+                ['text' => '$this->doesNotExist', 'type' => 'MixedReturnStatement'],
+                // ... a write is never forwarded (DelegatesToResource has no __set()) ...
+                ['text' => '$this->headline', 'type' => 'UndefinedThisPropertyAssignment'],
+                // ... or from a policy that receives the resource.
+                ['text' => '$post->doesNotExist', 'type' => 'UndefinedMagicPropertyFetch'],
+                ['text' => '$post->doesNotExist', 'type' => 'MixedReturnStatement'],
             ],
             array_map(
                 static fn(array $issue): array => ['text' => $issue['selected_text'], 'type' => $issue['type']],

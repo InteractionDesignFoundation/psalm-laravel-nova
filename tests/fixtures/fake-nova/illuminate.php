@@ -29,6 +29,12 @@ namespace Illuminate\Http\Resources {
         public function offsetSet(mixed $offset, mixed $value): void {}
 
         public function offsetUnset(mixed $offset): void {}
+
+        /** Real Laravel forwards every unknown property read to `$this->resource`. */
+        public function __get($key)
+        {
+            return null;
+        }
     }
 }
 
@@ -66,7 +72,16 @@ namespace Illuminate\Contracts\Database\Eloquent {
 }
 
 namespace Illuminate\Database\Eloquent {
-    class Model {}
+    class Model
+    {
+        /** Real Model resolves attributes through these, which is what makes `@property` docblocks readable. */
+        public function __get($key)
+        {
+            return null;
+        }
+
+        public function __set($key, $value): void {}
+    }
 
     class Builder implements \Illuminate\Contracts\Database\Eloquent\Builder
     {

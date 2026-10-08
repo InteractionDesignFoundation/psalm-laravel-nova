@@ -4,6 +4,7 @@ namespace Scenarios;
 
 use App\Models\Post;
 use Laravel\Nova\Actions\Action;
+use App\Models\User;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Filters\Filter;
@@ -84,3 +85,40 @@ final class BrokenNonFieldElements extends Action
  * @extends Resource<Post>
  */
 class NonFinalResource extends Resource {}
+
+/**
+ * Only what the model declares is forwarded: an unknown attribute is still a typo, from inside the
+ * resource and from a policy that receives it.
+ *
+ * @extends Resource<Post>
+ */
+final class ForwardingResource extends Resource
+{
+    public static string $model = Post::class;
+
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function subtitle(): string
+    {
+        return $this->doesNotExist;
+    }
+
+    /**
+     * Nova forwards reads only: `DelegatesToResource` has no `__set()`, so this would create a
+     * dynamic property on the resource and never reach the model.
+     * @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests
+     */
+    public function rename(): void
+    {
+        $this->headline = 'nope';
+    }
+}
+
+/** @psalm-suppress MissingImmutableAnnotation — irrelevant to what this fixture tests */
+final class ForwardingPolicy
+{
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function view(User $user, ForwardingResource $post): string
+    {
+        return $post->doesNotExist;
+    }
+}

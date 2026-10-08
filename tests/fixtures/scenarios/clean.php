@@ -3,7 +3,9 @@
 namespace Scenarios;
 
 use App\Models\Post;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -16,6 +18,7 @@ use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Filters\Filter;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Lenses\Lens;
+use Laravel\Nova\Resource;
 
 /** Every shape here is idiomatic Nova and must analyse without a single issue. */
 final class CleanResource
@@ -112,5 +115,77 @@ final class AuthorizesNonFieldElements
         PublishPost::make()->canSee($callback);
         ActiveOnly::make()->canSee($callback);
         TopPosts::make()->canSee($callback);
+    }
+}
+
+/**
+ * Nova's `DelegatesToResource::__get()` forwards unknown property reads to the model, so a model's
+ * `@property` set is readable straight off the resource — from inside it and, once it declares
+ * `$policy` (Nova then hands the policy the resource, not the model), from the policy as well.
+ *
+ * @extends Resource<Post>
+ */
+final class PostResource extends Resource
+{
+    public static string $model = Post::class;
+
+    public static string $policy = PostPolicy::class;
+
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function subtitle(): string
+    {
+        return $this->headline;
+    }
+
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function subtitleViaResource(): string
+    {
+        return $this->resource->headline;
+    }
+}
+
+/** @psalm-suppress MissingImmutableAnnotation — irrelevant to what this fixture tests */
+final class PostPolicy
+{
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function view(User $user, PostResource $post): bool
+    {
+        return $post->headline !== '';
+    }
+}
+
+/**
+ * The model binding may sit on an abstract base, however many levels up, and `$model` alone is enough
+ * when the binding is the bare `Model` bound.
+ *
+ * @extends Resource<Post>
+ */
+abstract class BasePostResource extends Resource
+{
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function baseSubtitle(): string
+    {
+        return $this->headline;
+    }
+}
+
+final class ConcretePostResource extends BasePostResource
+{
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function subtitle(): string
+    {
+        return $this->headline;
+    }
+}
+
+/** @extends Resource<Model> */
+final class ModelPropertyOnlyResource extends Resource
+{
+    public static string $model = Post::class;
+
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
+    public function subtitle(): string
+    {
+        return $this->headline;
     }
 }

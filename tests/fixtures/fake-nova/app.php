@@ -7,8 +7,14 @@
 
 namespace App\Models;
 
+/**
+ * @property string $headline
+ * @property-read int $views
+ */
 class Post extends \Illuminate\Database\Eloquent\Model
 {
     public string $title = '';
     public bool $published = false;
 }
+
+class User extends \Illuminate\Database\Eloquent\Model {}

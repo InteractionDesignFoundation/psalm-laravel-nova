@@ -16,17 +16,20 @@ final class Plugin implements PluginEntryPointInterface
         // psalm/plugin-laravel registers its own handlers).
         require_once __DIR__.'/Support/NovaQueryBuilderParamNarrower.php';
         require_once __DIR__.'/Support/StaticClassPropertyResolver.php';
+        require_once __DIR__.'/Support/NovaResourceModelResolver.php';
         require_once __DIR__.'/NovaResourceQueryMethodHandler.php';
         require_once __DIR__.'/NovaMakeSignatureHandler.php';
         require_once __DIR__.'/NovaWhenReturnTypeHandler.php';
         require_once __DIR__.'/NovaConventionsHandler.php';
         require_once __DIR__.'/NovaFieldAuthorizationHandler.php';
+        require_once __DIR__.'/NovaResourcePropertyForwardingHandler.php';
 
         $registration->registerHooksFromClass(NovaResourceQueryMethodHandler::class);
         $registration->registerHooksFromClass(NovaMakeSignatureHandler::class);
         $registration->registerHooksFromClass(NovaWhenReturnTypeHandler::class);
         $registration->registerHooksFromClass(NovaConventionsHandler::class);
         $registration->registerHooksFromClass(NovaFieldAuthorizationHandler::class);
+        $registration->registerHooksFromClass(NovaResourcePropertyForwardingHandler::class);
 
         // Nova stubs that fix vendor signatures Psalm cannot resolve (and template Resource so a
         // resource can declare its model via @extends). Shipped with the package so it stays

@@ -43,6 +43,39 @@ Nova's `Resource::indexQuery()`, `relatableQuery()` and friends receive a `Build
 
 The property value is validated (it must exist and be a genuine `Model` subclass) before narrowing, so a typo never produces a confidently wrong type.
 
+### A resource's property reads resolve against its model
+
+Nova's `DelegatesToResource::__get()` forwards every unknown property read on a resource to its model, so `$this->headline` inside a resource and `$post->headline` in a policy both work at runtime. The second case is not exotic: when a resource declares `public static $policy`, Nova hands the *resource* (not the model) to the policy (`Util::resolveResourceOrModelForAuthorization()`). Nova's `@mixin TModel` on `Resource` is not enough for Psalm, which resolves property lookups only against named mixins, so both reads are reported (`UndefinedThisPropertyFetch` / `UndefinedMagicPropertyFetch`, plus a `MixedReturnStatement` downstream).
+
+`NovaResourcePropertyForwardingHandler` registers the resource's model as a named mixin on every `Resource` descendant whose model resolves, using the same lookup as the query-method narrowing (the `@extends Resource<Model>` binding, including through abstract base resources, then `public static $model`). The model's `@property` annotations and declared properties then resolve on the resource:
+
+```php
+/** @extends \Laravel\Nova\Resource<Post> */
+final class PostResource extends Resource
+{
+    public static string $policy = PostPolicy::class;
+
+    public function subtitle(): string
+    {
+        return $this->headline; // Post's `@property string $headline`
+    }
+}
+
+final class PostPolicy
+{
+    public function view(User $user, PostResource $post): bool
+    {
+        return $post->headline !== '';
+    }
+}
+```
+
+An attribute the model does not declare is still reported, and so is a resource with no resolvable model. Trade-offs:
+
+- **Reads only.** Nova defines no `__set()`, so `$this->headline = 'x'` creates a dynamic property on the resource and never reaches the model; it stays reported.
+- **Names `Resource` declares itself are not forwarded.** Nova's own static properties (`$title`, `$group`, `$with`, `$search`, …) win Psalm's lookup, so a model attribute called `title` is still reported on `$this->title`; read it through `$this->resource->title` instead. (At runtime PHP does fall through to `__get()` for these, so this is a Psalm limitation rather than a Nova rule.)
+- **Methods are out of scope.** `__call()` forwarding (`$this->save()`) is unchanged.
+
 ### `$this->when(...)` no longer poisons `fields()`
 
 `Illuminate\Http\Resources\ConditionallyLoadsAttributes::when()` returns `mixed`, which degrades the inferred element type of every array literal built with it, including Nova's `fields()` and `actions()`. `NovaWhenReturnTypeHandler` introspects the argument and returns the closure's return type (or the value's type) unioned with `MissingValue`. A literal `true`/`false` condition drops the dead branch. When the type cannot be resolved, the provider declines rather than leaking a raw `Closure` into the union.

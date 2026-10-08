@@ -116,6 +116,13 @@ namespace Laravel\Nova {
         use \Laravel\Nova\ResolvesLenses;
         use \Laravel\Nova\SupportsPolling;
 
+        /**
+         * The column that should be used to display the resource.
+         *
+         * @var string
+         */
+        public static $title = 'id';
+
         /** @return array<string, mixed> */
         public function jsonSerialize(): array
         {
