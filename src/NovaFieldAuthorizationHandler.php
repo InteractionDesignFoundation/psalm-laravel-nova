@@ -13,8 +13,10 @@ use Psalm\Type\Atomic\TNamedObject;
 use Psalm\Type\Union;
 
 /**
- * Narrows `canSee()` to `NovaRequest` for every `FieldElement` descendant, leaving `Tool`/`Dashboard`/
- * `Filters\Filter`/`Menu\*` (same `AuthorizedToSee` trait, but can get a plain `Request`) untouched.
+ * Narrows `canSee()` to `NovaRequest` for every `FieldElement`, `Actions\Action`, `Filters\Filter` and
+ * `Lenses\Lens` descendant — the classes whose `authorizedToSee()` Nova only ever calls with a
+ * `NovaRequest` (verified against Nova 5.11) — leaving `Tool`/`Dashboard`/`Menu\*` (same
+ * `AuthorizedToSee` trait, but resolved with a plain `Request` by `BootTools`) untouched.
  * A stub can't do this — `canSee()` is only inherited, never declared, on the classes in between, and
  * a stub can override a declared method but not an inherited one (confirmed against real Nova). This
  * rewrites `declaring_method_ids`/`methods` directly instead — the fields Psalm's method resolution
@@ -23,7 +25,13 @@ use Psalm\Type\Union;
  */
 final class NovaFieldAuthorizationHandler implements AfterCodebasePopulatedInterface
 {
-    private const FIELD_ELEMENT = 'laravel\nova\fields\fieldelement';
+    /** Lower-cased roots whose descendants only ever see a `NovaRequest` in `authorizedToSee()`. */
+    private const NOVA_REQUEST_ROOTS = [
+        'laravel\nova\fields\fieldelement',
+        'laravel\nova\actions\action',
+        'laravel\nova\filters\filter',
+        'laravel\nova\lenses\lens',
+    ];
 
     private const AUTHORIZED_TO_SEE = 'laravel\nova\authorizedtosee';
 
@@ -37,14 +45,22 @@ final class NovaFieldAuthorizationHandler implements AfterCodebasePopulatedInter
         $codebase = $event->getCodebase();
 
         foreach ($codebase->classlike_storage_provider::getAll() as $storage) {
-            $isFieldElement = mb_strtolower($storage->name) === self::FIELD_ELEMENT
-                || isset($storage->parent_classes[self::FIELD_ELEMENT]);
-            if (!$isFieldElement) {
-                continue;
+            if (self::isNovaRequestOnly($storage)) {
+                self::narrowCanSee($codebase, $storage);
             }
-
-            self::narrowCanSee($codebase, $storage);
         }
+    }
+
+    /** @psalm-mutation-free */
+    private static function isNovaRequestOnly(ClassLikeStorage $storage): bool
+    {
+        foreach (self::NOVA_REQUEST_ROOTS as $root) {
+            if (mb_strtolower($storage->name) === $root || isset($storage->parent_classes[$root])) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     private static function narrowCanSee(Codebase $codebase, ClassLikeStorage $storage): void
