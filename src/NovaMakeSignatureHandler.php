@@ -8,6 +8,10 @@ use Psalm\Plugin\EventHandler\Event\AfterCodebasePopulatedEvent;
 use Psalm\Storage\ClassLikeStorage;
 use Psalm\Storage\FunctionLikeParameter;
 use Psalm\Storage\MethodStorage;
+use Psalm\Type;
+use Psalm\Type\Atomic\TCallable;
+use Psalm\Type\Atomic\TTemplateParam;
+use Psalm\Type\Union;
 
 /**
  * Gives every Nova `make()` call its own class's constructor signature, so that calls with the
@@ -61,6 +65,20 @@ use Psalm\Storage\MethodStorage;
  *    and skipping "no-op" cases would require re-implementing Psalm's own ancestor walk just to save
  *    a handful of clones.
  *
+ * 4. The resolve callback (`callable(mixed, mixed, ?string):mixed`, the 3rd constructor param of `Field`,
+ *    `DateTime`, `Date`, `Email`, `ID`, ...) is re-typed on the synthesized `make()` as
+ *    `callable(mixed, TResource, string):mixed`, with `TResource` a method-level template bounded exactly
+ *    like the one `FieldElement.phpstub` uses for visibility callbacks. Nova calls it as
+ *    `call_user_func($resolveCallback, $value, $resource, $attribute)` where `$attribute` is
+ *    `$attribute ?? $this->attribute` (never null) and `$resource` is the resolved model/pivot/repeater
+ *    row, so the idiomatic `fn (mixed $value, Post $resource, string $attribute)` is sound but was
+ *    rejected twice over (`Post` vs `mixed` and `string` vs `?string` are both contravariance
+ *    violations). The template can only live here: `make()` is a synthesized pseudo method, a `@method`
+ *    annotation cannot declare templates, and the real constructor is the field class's own (often
+ *    Nova's own, with its own docblock) — the constructor itself keeps Nova's wide signature, because
+ *    narrowing it would need a stub redeclaring the constructor of every field class that has one.
+ *    Constructors without a resolve callback of that exact shape are left untouched.
+ *
  * `FunctionLikeParameter` instances are cloned per target `MethodStorage` (never shared) — Psalm
  * storages are mutated in place during analysis, so aliasing the same parameter object across two
  * methods would let a mutation on one bleed into the other.
@@ -85,6 +103,14 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
 
     private const CONSTRUCT = '__construct';
 
+    private const RESOURCE_TEMPLATE = 'TResource';
+
+    /**
+     * Keep in sync with the `@template TResource of ...` bound in `stubs/Nova/Fields/FieldElement.phpstub`
+     * and `Field.phpstub`: the widest thing Nova hands a field as its resource.
+     */
+    private const RESOURCE_BOUND = 'Illuminate\\Database\\Eloquent\\Model|Laravel\\Nova\\Support\\Fluent|array<array-key, mixed>|object';
+
     #[\Override]
     public static function afterCodebasePopulated(AfterCodebasePopulatedEvent $event): void
     {
@@ -105,14 +131,14 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
             // The real `methods` bucket is deliberately not touched: the real
             // `Makeable::make(...$arguments)` is already correctly variadic, and pseudo entries
             // take precedence over it during static-call resolution anyway.
-            self::rewriteBucketMake($storage->pseudo_methods, $sourceParams, $variadic);
-            self::rewriteBucketMake($storage->pseudo_static_methods, $sourceParams, $variadic);
+            self::rewriteBucketMake($storage->pseudo_methods, $sourceParams, $variadic, $storage->name);
+            self::rewriteBucketMake($storage->pseudo_static_methods, $sourceParams, $variadic, $storage->name);
 
             if (!$hasOwnPseudoStaticMake) {
                 $template = self::resolveRootMakeTemplate($codebase, $storage, $rootsFlipped);
                 if ($template !== null) {
                     $synthetic = clone $template;
-                    self::applySignature($synthetic, $sourceParams, $variadic);
+                    self::applySignature($synthetic, $sourceParams, $variadic, $storage->name);
                     $storage->pseudo_static_methods[self::MAKE] = $synthetic;
                 }
             }
@@ -127,15 +153,19 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
      * @param array<lowercase-string, \Psalm\Storage\MethodStorage> $bucket `pseudo_methods` or `pseudo_static_methods`, modified in place
      * @param list<\Psalm\Storage\FunctionLikeParameter> $sourceParams
      */
-    private static function rewriteBucketMake(array &$bucket, array $sourceParams, bool $variadic): void
-    {
+    private static function rewriteBucketMake(
+        array &$bucket,
+        array $sourceParams,
+        bool $variadic,
+        string $className
+    ): void {
         $make = $bucket[self::MAKE] ?? null;
         if ($make === null) {
             return;
         }
 
         $replacement = clone $make;
-        self::applySignature($replacement, $sourceParams, $variadic);
+        self::applySignature($replacement, $sourceParams, $variadic, $className);
         $bucket[self::MAKE] = $replacement;
     }
 
@@ -230,8 +260,12 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
     }
 
     /** @param list<\Psalm\Storage\FunctionLikeParameter> $sourceParams */
-    private static function applySignature(MethodStorage $make, array $sourceParams, bool $variadic): void
-    {
+    private static function applySignature(
+        MethodStorage $make,
+        array $sourceParams,
+        bool $variadic,
+        string $className
+    ): void {
         $make->params = array_map(
             static function (FunctionLikeParameter $param): FunctionLikeParameter {
                 $cloned = clone $param;
@@ -244,5 +278,91 @@ final class NovaMakeSignatureHandler implements AfterCodebasePopulatedInterface
             $sourceParams
         );
         $make->variadic = $variadic;
+
+        // `$make` may be a clone of an entry this handler already narrowed for another class.
+        if ($make->template_types !== null) {
+            unset($make->template_types[self::RESOURCE_TEMPLATE]);
+            if ($make->template_types === []) {
+                $make->template_types = null;
+            }
+        }
+
+        self::narrowResolveCallback($make, $className);
+    }
+
+    /**
+     * Re-types every Nova-shaped resolve callback param of `$make` (see class docblock, point 4) onto a
+     * method-level `TResource` template. The template's `defining_class` follows Psalm's own
+     * `fn-<lowercase method id>` convention for function-level templates.
+     */
+    private static function narrowResolveCallback(MethodStorage $make, string $className): void
+    {
+        $bound = Type::parseString(self::RESOURCE_BOUND);
+        $definingClass = 'fn-'.mb_strtolower($className).'::make';
+        $template = new Union(
+            [new TTemplateParam(self::RESOURCE_TEMPLATE, $bound, $definingClass, from_docblock: true)],
+            ['from_docblock' => true]
+        );
+
+        $narrowed = false;
+        foreach ($make->params as $param) {
+            if ($param->type === null) {
+                continue;
+            }
+
+            $atomics = [];
+            $changed = false;
+            foreach ($param->type->getAtomicTypes() as $atomic) {
+                if ($atomic instanceof TCallable && self::isNovaResolveCallable($atomic)) {
+                    $atomics[] = self::narrowCallable($atomic, $template);
+                    $changed = true;
+                } else {
+                    $atomics[] = $atomic;
+                }
+            }
+
+            if ($changed) {
+                $param->type = new Union($atomics, ['from_docblock' => true]);
+                $narrowed = true;
+            }
+        }
+
+        if ($narrowed) {
+            $make->template_types[self::RESOURCE_TEMPLATE] = [$definingClass => $bound];
+        }
+    }
+
+    /**
+     * Nova's docblock for the resolve callback: `callable(mixed, mixed, ?string)`.
+     * @psalm-mutation-free
+     */
+    private static function isNovaResolveCallable(TCallable $callable): bool
+    {
+        if ($callable->params === null || \count($callable->params) !== 3) {
+            return false;
+        }
+
+        [$value, $resource, $attribute] = $callable->params;
+
+        return $value->type?->isMixed() === true
+            && $resource->type?->isMixed() === true
+            && $attribute->type !== null
+            && $attribute->type->isNullable()
+            && $attribute->type->hasString()
+            && \count($attribute->type->getAtomicTypes()) === 2;
+    }
+
+    private static function narrowCallable(TCallable $callable, Union $resourceTemplate): TCallable
+    {
+        /** @var list<\Psalm\Storage\FunctionLikeParameter> $params guarded by isNovaResolveCallable() */
+        $params = $callable->params;
+
+        $resource = clone $params[1];
+        $resource->type = $resourceTemplate;
+
+        $attribute = clone $params[2];
+        $attribute->type = Type::getString();
+
+        return $callable->replace([$params[0], $resource, $attribute], $callable->return_type);
     }
 }

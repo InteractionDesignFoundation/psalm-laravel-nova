@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Fields\ActionFields;
+use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Fields\Line;
 use Laravel\Nova\Fields\Stack;
@@ -54,6 +55,22 @@ final class CleanResource
                 Line::make('Title'),
                 Line::make('Author'),
             ]),
+
+            // Fix 5: the resolve callback narrowed to the resource's model and a non-null attribute.
+            DateTime::make(
+                'Published',
+                'published_at',
+                static fn(mixed $value, Post $resource, string $attribute): ?\DateTimeInterface => $resource->published_at,
+            ),
+            Text::make('Headline', 'headline', static fn(mixed $value, Post $resource, string $attribute): string => $resource->headline),
+
+            // Fix 5b: resolveUsing()/displayUsing() take the same callback shape.
+            Text::make('Summary')
+                ->resolveUsing(static fn(mixed $value, Post $resource, string $attribute): string => $resource->headline)
+                ->displayUsing(static fn(mixed $value, Post $resource, string $attribute): string => $resource->headline),
+            // A callback that ignores trailing params, or leaves its types wide, is still fine.
+            Text::make('Teaser', 'teaser', static fn(mixed $value): mixed => $value),
+            Text::make('Lead')->resolveUsing(static fn(mixed $value, mixed $resource, ?string $attribute): mixed => $value),
         ];
     }
 }

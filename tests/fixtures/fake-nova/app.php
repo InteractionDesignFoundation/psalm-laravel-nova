@@ -11,4 +11,6 @@ class Post extends \Illuminate\Database\Eloquent\Model
 {
     public string $title = '';
     public bool $published = false;
+    public string $headline = '';
+    public ?\DateTimeInterface $published_at = null;
 }

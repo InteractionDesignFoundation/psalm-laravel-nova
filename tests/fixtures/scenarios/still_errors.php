@@ -42,6 +42,19 @@ final class BrokenResource
             // Not a valid line: an int is neither class-string<Field>, callable, nor Field.
             Stack::make('E', [42]),
 
+            // Wrong attribute type on the make() resolve callback: Nova always passes a string.
+            Text::make('H', 'h', static fn(mixed $value, Post $resource, int $attribute): string => 'nope'),
+
+            // Resource param outside the Model|Fluent|array|object bound.
+            Text::make('I', 'i', static fn(mixed $value, int $resource, string $attribute): string => 'nope'),
+
+            // Arity: Nova passes three arguments, a fourth required param can never be satisfied.
+            Text::make('J', 'j', static fn(mixed $value, Post $resource, string $attribute, mixed $extra): string => 'nope'),
+
+            // The same checks apply to resolveUsing()/displayUsing().
+            Text::make('K')->resolveUsing(static fn(mixed $value, Post $resource, int $attribute): string => 'nope'),
+            Text::make('L')->displayUsing(static fn(mixed $value, Post $resource, string $attribute, mixed $extra): string => 'nope'),
+
             // Not a valid line via $lines either: stdClass is neither class-string<Field>, callable, nor Field.
             Stack::make('F', 'a', [new \stdClass()]),
         ];
