@@ -59,6 +59,10 @@ final class AcceptanceTest extends TestCase
                 ['text' => '[new \stdClass()]', 'type' => 'InvalidArgument'],
                 // Tool::canSee() narrowed to NovaRequest would be unsound: Tool can receive a plain Request.
                 ['text' => 'static fn(NovaRequest $request): bool => true', 'type' => 'ArgumentTypeCoercion'],
+                // Action/Filter/Lens::canSee() is narrowed to NovaRequest, not widened to anything.
+                ['text' => 'static fn(int $request): bool => true', 'type' => 'InvalidArgument'],
+                ['text' => 'static fn(\stdClass $request): bool => true', 'type' => 'InvalidArgument'],
+                ['text' => 'static fn(string $request): bool => true', 'type' => 'InvalidArgument'],
                 // Marking a resource an entry point silences ClassMustBeFinal, so the plugin only
                 // does it when unused-code analysis is on — which this config's is not.
                 ['text' => 'NonFinalResource', 'type' => 'ClassMustBeFinal'],

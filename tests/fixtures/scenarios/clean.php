@@ -7,12 +7,15 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
+use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Field;
 use Laravel\Nova\Fields\Line;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
+use Laravel\Nova\Filters\Filter;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Lenses\Lens;
 
 /** Every shape here is idiomatic Nova and must analyse without a single issue. */
 final class CleanResource
@@ -86,5 +89,28 @@ final class BuildsActionFields
     public function build(int $targetId): ActionFields
     {
         return new ActionFields(new Collection(['target_id' => $targetId]), new Collection([]));
+    }
+}
+
+/**
+ * Fix 5: canSee() narrowed to NovaRequest on Action/Filter/Lens too. Nova only ever calls
+ * authorizedToSee() on these with a NovaRequest (ResolvesActions/ResolvesFilters/ResolvesLenses,
+ * ActionRequest, LensRequest; the menu items built from a lens get app(NovaRequest::class)).
+ */
+final class PublishPost extends Action {}
+
+final class ActiveOnly extends Filter {}
+
+final class TopPosts extends Lens {}
+
+final class AuthorizesNonFieldElements
+{
+    public function authorize(): void
+    {
+        $callback = static fn(NovaRequest $request): bool => $request->isResourceIndexRequest();
+
+        PublishPost::make()->canSee($callback);
+        ActiveOnly::make()->canSee($callback);
+        TopPosts::make()->canSee($callback);
     }
 }

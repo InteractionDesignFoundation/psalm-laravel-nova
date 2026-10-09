@@ -3,9 +3,12 @@
 namespace Scenarios;
 
 use App\Models\Post;
+use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
+use Laravel\Nova\Filters\Filter;
 use Laravel\Nova\Http\Requests\NovaRequest;
+use Laravel\Nova\Lenses\Lens;
 use Laravel\Nova\Resource;
 use Laravel\Nova\Tool;
 
@@ -55,6 +58,20 @@ final class BrokenTool extends Tool
     {
         // Wrong: narrows to NovaRequest, but Tool can receive a plain Request.
         $this->canSee(static fn(NovaRequest $request): bool => true);
+    }
+}
+
+/**
+ * Narrowing Action/Filter/Lens::canSee() to NovaRequest must not turn it into blanket `mixed`: a
+ * callback whose param can't take a NovaRequest is still wrong.
+ */
+final class BrokenNonFieldElements extends Action
+{
+    public function register(Filter $filter, Lens $lens): void
+    {
+        $this->canSee(static fn(int $request): bool => true);
+        $filter->canSee(static fn(\stdClass $request): bool => true);
+        $lens->canSee(static fn(string $request): bool => true);
     }
 }
 

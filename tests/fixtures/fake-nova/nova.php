@@ -12,6 +12,12 @@
 namespace Laravel\Nova {
     trait AuthorizedToSee
     {
+        /** @return bool */
+        public function authorizedToSee(\Illuminate\Http\Request $request)
+        {
+            return true;
+        }
+
         /**
          * @param \Closure(\Laravel\Nova\Http\Requests\NovaRequest|\Illuminate\Http\Request):bool $callback
          * @return $this
@@ -33,6 +39,7 @@ namespace Laravel\Nova {
 
     trait Metable {}
     trait ProxiesCanSeeToGate {}
+    trait SupportsPolling {}
     trait WithComponent {}
 
     abstract class Element implements \JsonSerializable
@@ -79,7 +86,6 @@ namespace Laravel\Nova {
     trait ResolvesFields {}
     trait ResolvesFilters {}
     trait ResolvesLenses {}
-    trait SupportsPolling {}
 
     trait PerformsQueries
     {
@@ -137,8 +143,56 @@ namespace Laravel\Nova\Actions {
     }
 }
 
+namespace Laravel\Nova\Filters {
+    trait Searchable {}
+
+    abstract class Filter implements \Laravel\Nova\Contracts\Filter, \JsonSerializable
+    {
+        use \Laravel\Nova\AuthorizedToSee;
+        use \Illuminate\Support\Traits\Macroable;
+        use \Laravel\Nova\Makeable;
+        use \Laravel\Nova\Metable;
+        use \Laravel\Nova\ProxiesCanSeeToGate;
+        use \Laravel\Nova\Filters\Searchable;
+        use \Laravel\Nova\WithComponent;
+
+        /** @return array<string, mixed> */
+        public function jsonSerialize(): array
+        {
+            return [];
+        }
+    }
+}
+
+namespace Laravel\Nova\Lenses {
+    abstract class Lens implements \ArrayAccess, \JsonSerializable, \Illuminate\Contracts\Routing\UrlRoutable
+    {
+        use \Laravel\Nova\AuthorizedToSee;
+        use \Illuminate\Http\Resources\ConditionallyLoadsAttributes;
+        use \Illuminate\Http\Resources\DelegatesToResource;
+        use \Laravel\Nova\Makeable;
+        use \Laravel\Nova\ProxiesCanSeeToGate;
+        use \Laravel\Nova\ResolvesActions;
+        use \Laravel\Nova\ResolvesCards;
+        use \Laravel\Nova\ResolvesFilters;
+        use \Laravel\Nova\SupportsPolling;
+
+        /** @return array<string, mixed> */
+        public function jsonSerialize(): array
+        {
+            return [];
+        }
+    }
+}
+
 namespace Laravel\Nova\Contracts {
     interface Resolvable {}
+
+    interface Filter
+    {
+        /** @return bool */
+        public function authorizedToSee(\Illuminate\Http\Request $request);
+    }
 }
 
 namespace Laravel\Nova\Support {
@@ -150,7 +204,14 @@ namespace Laravel\Nova\Metrics {
 }
 
 namespace Laravel\Nova\Http\Requests {
-    class NovaRequest extends \Illuminate\Http\Request {}
+    class NovaRequest extends \Illuminate\Http\Request
+    {
+        /** Determine if this request is a resource index request. */
+        public function isResourceIndexRequest(): bool
+        {
+            return false;
+        }
+    }
 }
 
 namespace Laravel\Nova\Fields {
