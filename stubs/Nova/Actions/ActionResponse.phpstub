@@ -1,0 +1,13 @@
+<?php
+
+namespace Laravel\Nova\Actions;
+
+/**
+ * Nova implements a bare `ArrayAccess`, so Psalm cannot pass a response to an API typed
+ * `ArrayAccess<array-key, mixed>` (e.g. PHPUnit's assertArrayHasKey()) without a mixed coercion.
+ * @implements \ArrayAccess<array-key, mixed>
+ */
+class ActionResponse implements \ArrayAccess, \JsonSerializable
+{
+    use \Laravel\Nova\Makeable;
+}

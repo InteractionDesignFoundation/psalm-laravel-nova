@@ -32,6 +32,10 @@ namespace Illuminate\Http\Resources {
     }
 }
 
+namespace Illuminate\Contracts\Auth {
+    interface Authenticatable {}
+}
+
 namespace Illuminate\Contracts\Routing {
     interface UrlRoutable {}
 }
@@ -46,6 +50,12 @@ namespace Illuminate\Support {
     {
         /** @param array<TKey, TValue> $items */
         public function __construct(array $items = []) {}
+
+        /** @return int<0, max> */
+        public function count(): int
+        {
+            return 0;
+        }
     }
 
     /**
