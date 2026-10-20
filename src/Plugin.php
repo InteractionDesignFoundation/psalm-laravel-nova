@@ -33,11 +33,14 @@ final class Plugin implements PluginEntryPointInterface
         // self-contained.
         $stubsDir = __DIR__.'/../stubs/Nova';
         $registration->addStubFile($stubsDir.'/Actions/Action.phpstub');
+        $registration->addStubFile($stubsDir.'/Actions/ActionEvent.phpstub');
+        $registration->addStubFile($stubsDir.'/Actions/ActionResponse.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Field.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/FieldElement.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Filterable.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/ResolvedFields.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Stack.phpstub');
+        $registration->addStubFile($stubsDir.'/Fields/SupportsDependentFields.phpstub');
         $registration->addStubFile($stubsDir.'/Element.phpstub');
         $registration->addStubFile($stubsDir.'/Metrics/PartitionResult.phpstub');
         $registration->addStubFile($stubsDir.'/Panel.phpstub');

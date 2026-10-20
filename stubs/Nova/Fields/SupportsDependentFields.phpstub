@@ -1,0 +1,39 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types the callback's form data as a bare `FormData`, which Psalm reads as
+ * `FormData<array-key, mixed>`, so a callback or helper typed against its own `FormData` is rejected.
+ * Nova keys the form data by field attribute, a string unless the attribute is numeric (PHP turns a
+ * numeric-string array key into an int). `string|TKey` mirrors Action::using()'s `int|TKey`: a callback
+ * typed with a wider key (`FormData<array-key, mixed>`) or a bare `FormData` keeps matching, while one
+ * that only takes int keys is rejected. A numeric attribute passed to a `FormData<string, mixed>`
+ * callback is not caught.
+ */
+trait SupportsDependentFields
+{
+    /**
+     * @template TKey of array-key
+     * @param \Laravel\Nova\Fields\Field|array<int, string|\Laravel\Nova\Fields\Field>|string $attributes
+     * @param (callable(static, \Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Fields\FormData<string|TKey, mixed>):(void))|class-string $mixin
+     * @return $this
+     */
+    public function dependsOn(Field|array|string $attributes, callable|string $mixin) {}
+
+    /**
+     * @template TKey of array-key
+     * @param \Laravel\Nova\Fields\Field|array<int, string|\Laravel\Nova\Fields\Field>|string $attributes
+     * @param (callable(static, \Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Fields\FormData<string|TKey, mixed>):(void))|class-string $mixin
+     * @return $this
+     */
+    public function dependsOnCreating(Field|array|string $attributes, callable|string $mixin) {}
+
+    /**
+     * @template TKey of array-key
+     * @param string|\Laravel\Nova\Fields\Field|array<int, string|\Laravel\Nova\Fields\Field> $attributes
+     * @param (callable(static, \Laravel\Nova\Http\Requests\NovaRequest, \Laravel\Nova\Fields\FormData<string|TKey, mixed>):(void))|class-string $mixin
+     * @return $this
+     */
+    public function dependsOnUpdating($attributes, $mixin) {}
+}
