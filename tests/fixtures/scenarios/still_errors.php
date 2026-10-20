@@ -116,6 +116,8 @@ final class BrokenActionsAndDependentFields
 
         // The form data is a FormData, nothing else.
         Text::make('F')->dependsOn('x', static function (Text $field, NovaRequest $request, \stdClass $formData): void {});
+        // Nova keys the form data by field attribute, a string: an int-keyed FormData is wrong.
+        Text::make('J')->dependsOn('x', /** @param FormData<int, mixed> $formData */ static function (Text $field, NovaRequest $request, FormData $formData): void {});
         // `static` is the concrete field: a Text is not an Email.
         Text::make('G')->dependsOn('x', static function (Email $field, NovaRequest $request, FormData $formData): void {});
         // Arity: a fourth required param can never be satisfied.

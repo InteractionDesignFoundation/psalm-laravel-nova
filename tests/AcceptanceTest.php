@@ -86,9 +86,10 @@ final class AcceptanceTest extends TestCase
                 ['text' => 'static fn(ActionFields $fields, Collection $posts, int $extra): int => 1', 'type' => 'InvalidScalarArgument'],
                 // ActionEvent's factories take a collection, whatever it holds.
                 ['text' => 'new \stdClass()', 'type' => 'InvalidArgument'],
-                // dependsOn*() callbacks: the third param is a FormData, `static` is the concrete field,
-                // and arity and request type are still checked.
+                // dependsOn*() callbacks: the third param is a FormData keyed by string, `static` is the
+                // concrete field, and arity and request type are still checked.
                 ['text' => 'static function (Text $field, NovaRequest $request, \stdClass $formData): void {}', 'type' => 'InvalidArgument'],
+                ['text' => 'static function (Text $field, NovaRequest $request, FormData $formData): void {}', 'type' => 'InvalidArgument'],
                 ['text' => 'static function (Email $field, NovaRequest $request, FormData $formData): void {}', 'type' => 'ArgumentTypeCoercion'],
                 ['text' => 'static function (Text $field, NovaRequest $request, FormData $formData, int $extra): void {}', 'type' => 'InvalidScalarArgument'],
                 ['text' => 'static function (Text $field, \stdClass $request, FormData $formData): void {}', 'type' => 'InvalidArgument'],
