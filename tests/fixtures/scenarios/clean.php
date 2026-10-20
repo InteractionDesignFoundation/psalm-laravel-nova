@@ -89,9 +89,13 @@ final class FieldWithOwnAuthorization extends Field
     }
 }
 
+/** @psalm-suppress MissingImmutableAnnotation — irrelevant to what this fixture tests */
 final class UsesFieldWithOwnAuthorization
 {
-    /** @return list<\Laravel\Nova\Fields\Field> */
+    /**
+     * @return list<\Laravel\Nova\Fields\Field>
+     * @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests
+     */
     public function fields(): array
     {
         return [
@@ -100,9 +104,13 @@ final class UsesFieldWithOwnAuthorization
     }
 }
 
-/** Nova hints ResolvedFields' constructor params as bare Collection; a non-literal value must still pass. */
+/**
+ * Nova hints ResolvedFields' constructor params as bare Collection; a non-literal value must still pass.
+ * @psalm-suppress MissingImmutableAnnotation — irrelevant to what this fixture tests
+ */
 final class BuildsActionFields
 {
+    /** @psalm-suppress MissingPureAnnotation — irrelevant to what this fixture tests */
     public function build(int $targetId): ActionFields
     {
         return new ActionFields(new Collection(['target_id' => $targetId]), new Collection([]));
