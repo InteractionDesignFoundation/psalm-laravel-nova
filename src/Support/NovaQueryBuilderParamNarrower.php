@@ -98,7 +98,7 @@ final class NovaQueryBuilderParamNarrower
 
     /**
      * An un-parameterized contract or Eloquent builder param: safe to rewrite to Builder<Model>.
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isBareBuilderParam(?Union $type): bool
     {
@@ -129,7 +129,7 @@ final class NovaQueryBuilderParamNarrower
 
     /**
      * An already-parameterized `Builder<SomeModel>` param: user-narrowed, only needs the suppression.
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function isGenericBuilderParam(?Union $type): bool
     {

@@ -116,7 +116,7 @@ final class NovaWhenReturnTypeHandler implements MethodReturnTypeProviderInterfa
      * Returns null when an invocable atomic's return type is unresolvable — the caller must
      * decline entirely rather than guess.
      * @return non-empty-list<\Psalm\Type\Atomic>|null
-     * @psalm-mutation-free
+     * @psalm-pure
      */
     private static function unwrapEvaluatedAtomics(Union $type): ?array
     {
