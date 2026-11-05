@@ -16,20 +16,23 @@ jobs:
     name: phpunit
     runs-on: ubuntu-latest
     timeout-minutes: 7
+    strategy:
+      matrix:
+        php: [ '8.4', '8.5', '8.6' ]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
 
       - name: Setup PHP
         uses: shivammathur/setup-php@eb7c497e18156a6bbabfef1d3a82760b9eda3962 # v2
         with:
-          php-version: '8.4'
+          php-version: ${{ matrix.php }}
           coverage: none
 
       - name: Cache composer dependencies
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6
         with:
           path: vendor
-          key: composer-${{ hashFiles('composer.json') }}
+          key: composer-${{ matrix.php }}-${{ hashFiles('composer.json') }}
 
       - name: Run composer install
         run: composer install -n --prefer-dist
