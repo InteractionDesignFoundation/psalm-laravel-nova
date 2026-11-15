@@ -9,7 +9,9 @@ use Laravel\Nova\Actions\Action;
 use Laravel\Nova\Actions\ActionEvent;
 use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\Email;
+use Laravel\Nova\Fields\File;
 use Laravel\Nova\Fields\FormData;
+use Laravel\Nova\Fields\Image;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
 use Laravel\Nova\Filters\Filter;
@@ -17,6 +19,7 @@ use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Lenses\Lens;
 use Laravel\Nova\Resource;
 use Laravel\Nova\Tool;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * The narrowed stubs must not turn into blanket `mixed`: every callback below is genuinely wrong
@@ -60,6 +63,14 @@ final class BrokenResource
             // The same checks apply to resolveUsing()/displayUsing().
             Text::make('K')->resolveUsing(static fn(mixed $value, Post $resource, int $attribute): string => 'nope'),
             Text::make('L')->displayUsing(static fn(mixed $value, Post $resource, string $attribute, mixed $extra): string => 'nope'),
+
+            // File callbacks stay strict apart from the resource param: toDownloadResponse() has a
+            // non-nullable native return type, so a nullable download response is a real TypeError.
+            Image::make('M')->download(static fn(NovaRequest $request, Post $post, ?string $disk, ?string $value): ?StreamedResponse => null),
+            // Wrong request class on the storage callback.
+            File::make('N')->store(static fn(\stdClass $request, Post $post, string $attribute, string $requestAttribute, ?string $disk, ?string $path): string => 'nope'),
+            // Resource param outside the Model|Fluent|array|object bound.
+            File::make('O')->preview(static fn(mixed $value, ?string $disk, int $resource): ?string => null),
 
             // Not a valid line via $lines either: stdClass is neither class-string<Field>, callable, nor Field.
             Stack::make('F', 'a', [new \stdClass()]),

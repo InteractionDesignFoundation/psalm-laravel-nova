@@ -37,7 +37,11 @@ final class Plugin implements PluginEntryPointInterface
         $registration->addStubFile($stubsDir.'/Actions/ActionResponse.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Field.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/FieldElement.phpstub');
+        $registration->addStubFile($stubsDir.'/Fields/File.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Filterable.phpstub');
+        $registration->addStubFile($stubsDir.'/Fields/HasDownload.phpstub');
+        $registration->addStubFile($stubsDir.'/Fields/HasPreview.phpstub');
+        $registration->addStubFile($stubsDir.'/Fields/HasThumbnail.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/ResolvedFields.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/Stack.phpstub');
         $registration->addStubFile($stubsDir.'/Fields/SupportsDependentFields.phpstub');

@@ -8,6 +8,18 @@
 
 namespace Illuminate\Http {
     class Request {}
+
+    class Response extends \Symfony\Component\HttpFoundation\Response {}
+
+    class RedirectResponse extends \Symfony\Component\HttpFoundation\Response {}
+}
+
+namespace Symfony\Component\HttpFoundation {
+    class Response {}
+
+    class BinaryFileResponse extends Response {}
+
+    class StreamedResponse extends Response {}
 }
 
 namespace Illuminate\Http\Resources {

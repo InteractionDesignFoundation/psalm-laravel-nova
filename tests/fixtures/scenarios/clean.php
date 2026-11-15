@@ -7,6 +7,7 @@ use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Laravel\Nova\Actions\Action;
@@ -16,10 +17,13 @@ use Laravel\Nova\Fields\ActionFields;
 use Laravel\Nova\Fields\DateTime;
 use Laravel\Nova\Fields\Email;
 use Laravel\Nova\Fields\Field;
+use Laravel\Nova\Fields\File;
 use Laravel\Nova\Fields\FormData;
+use Laravel\Nova\Fields\Image;
 use Laravel\Nova\Fields\Line;
 use Laravel\Nova\Fields\Stack;
 use Laravel\Nova\Fields\Text;
+use Laravel\Nova\Fields\VaporFile;
 use Laravel\Nova\Filters\Filter;
 use Laravel\Nova\Http\Requests\NovaRequest;
 use Laravel\Nova\Lenses\Lens;
@@ -77,6 +81,26 @@ final class CleanResource
             // A callback that ignores trailing params, or leaves its types wide, is still fine.
             Text::make('Teaser', 'teaser', static fn(mixed $value): mixed => $value),
             Text::make('Lead')->resolveUsing(static fn(mixed $value, mixed $resource, ?string $attribute): mixed => $value),
+
+            // Fix 6: the file field's callbacks narrowed to the resource's own model (see File.phpstub
+            // and HasDownload.phpstub). `download()` still returns one of Nova's response classes.
+            Image::make('Cover')
+                ->store(static fn(Request $request, Post $post, string $attribute, string $requestAttribute, ?string $disk, ?string $path): string => $post->headline)
+                ->storeAs(static fn(Request $request, Post $post, string $attribute, string $requestAttribute, ?string $disk, ?string $path): string => $post->headline)
+                ->download(static fn(NovaRequest $request, Post $post, ?string $disk, ?string $value): RedirectResponse => new RedirectResponse())
+                ->preview(static fn(mixed $value, ?string $disk, Post $post): string => $post->headline)
+                ->thumbnail(static fn(mixed $value, string $disk, Post $post): string => $post->headline),
+            File::make('Attachment')
+                ->store(static fn(Request $request, Post $post, string $attribute, string $requestAttribute, ?string $disk, ?string $path): string => $post->headline)
+                ->storeAs(static fn(Request $request, Post $post, string $attribute, string $requestAttribute, ?string $disk, ?string $path): string => $post->headline)
+                ->download(static fn(NovaRequest $request, Post $post, ?string $disk, ?string $value): RedirectResponse => new RedirectResponse())
+                ->preview(static fn(mixed $value, ?string $disk, Post $post): string => $post->headline)
+                ->thumbnail(static fn(mixed $value, string $disk, Post $post): string => $post->headline),
+            // VaporFile has no store()/storeAs() of this shape but takes the same three trait callbacks.
+            VaporFile::make('Upload')
+                ->download(static fn(NovaRequest $request, Post $post, ?string $disk, ?string $value): RedirectResponse => new RedirectResponse())
+                ->preview(static fn(mixed $value, ?string $disk, Post $post): string => $post->headline)
+                ->thumbnail(static fn(mixed $value, string $disk, Post $post): string => $post->headline),
         ];
     }
 }
