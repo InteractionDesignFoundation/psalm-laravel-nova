@@ -1,0 +1,61 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types the resource of the storage callbacks (`store()`, `storeAs()`) as `Model|Fluent` and the
+ * resource of the `thumbnail()`/`preview()` callbacks as bare `mixed`. A closure narrowed to the
+ * resource's own model is rejected on the former, as contravariance-breaking (`InvalidArgument`), even
+ * though Nova always passes exactly that model. Redeclaring the param through the same bounded
+ * method-level template as `FieldElement` lets Psalm infer `TResource` from the closure; the trade-off
+ * (a wrong-but-bound-conforming type is accepted) is the one documented there. A wrong request class,
+ * a wrong disk/path/value param, a wrong return type, wrong arity and a non-object resource are still
+ * reported.
+ *
+ * `File` overrides `thumbnail()`/`preview()` itself instead of inheriting `HasThumbnail`/`HasPreview`'s,
+ * so they are redeclared here as well as in those traits (which `VaporFile` uses). `download()` only
+ * exists on the `HasDownload` trait; see `HasDownload.phpstub`.
+ *
+ * The header (interfaces and trait list) must match Nova's exactly: Psalm resets a stubbed class's
+ * interface/trait data to what the stub declares.
+ *
+ * @method static static make(\Stringable|string $name, string|callable|null $attribute = null, string|null $disk = null, callable|null $storageCallback = null)
+ */
+class File extends \Laravel\Nova\Fields\Field implements \Laravel\Nova\Contracts\Deletable, \Laravel\Nova\Contracts\Downloadable, \Laravel\Nova\Contracts\Storable
+{
+    use \Laravel\Nova\Fields\AcceptsTypes;
+    use \Laravel\Nova\Fields\Deletable;
+    use \Laravel\Nova\Fields\HasDownload;
+    use \Laravel\Nova\Fields\HasPreview;
+    use \Laravel\Nova\Fields\HasThumbnail;
+    use \Laravel\Nova\Fields\Storable;
+    use \Laravel\Nova\Fields\SupportsDependentFields;
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(\Illuminate\Http\Request, TResource, string, string, ?string, ?string):mixed $storageCallback
+     * @return $this
+     */
+    public function store(callable $storageCallback) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(\Illuminate\Http\Request, TResource, string, string, ?string, ?string):string $storeAsCallback
+     * @return $this
+     */
+    public function storeAs(callable $storeAsCallback) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(mixed, string, TResource):?string $thumbnailUrlCallback
+     * @return $this
+     */
+    public function thumbnail(callable $thumbnailUrlCallback) {}
+
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(mixed, ?string, TResource):?string $previewUrlCallback
+     * @return $this
+     */
+    public function preview(callable $previewUrlCallback) {}
+}

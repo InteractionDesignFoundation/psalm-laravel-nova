@@ -1,0 +1,19 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types the resource (3rd param) of the thumbnail callback as bare `mixed`; redeclared through the
+ * bounded template of `FieldElement.phpstub` (same trade-off, see there) so a closure narrowed to the
+ * resource's own model is accepted and a non-object resource param is reported. `File` redeclares the
+ * same method in `File.phpstub` because it overrides this one; this stub covers `VaporFile`.
+ */
+trait HasThumbnail
+{
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(mixed, string, TResource):?string $thumbnailUrlCallback
+     * @return $this
+     */
+    public function thumbnail(callable $thumbnailUrlCallback) {}
+}

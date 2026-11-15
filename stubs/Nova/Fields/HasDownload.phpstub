@@ -1,0 +1,25 @@
+<?php
+
+namespace Laravel\Nova\Fields;
+
+/**
+ * Nova types the resource of the download callback as `Model|Fluent|stdClass`, so a closure narrowed
+ * to the resource's own model is rejected (`InvalidArgument`), even though Nova passes exactly that
+ * model. Redeclaring the param through the bounded method-level template of `FieldElement.phpstub`
+ * lets Psalm infer `TResource` from the closure (same trade-off, see there).
+ *
+ * The return type stays strict and null-free, as `toDownloadResponse()` has a non-nullable native
+ * return type: a callback returning `?StreamedResponse` is a real `TypeError` and is still reported.
+ *
+ * `download()` lives only in this trait, so it is stubbed here rather than on `File`; the same stub
+ * covers `VaporFile`.
+ */
+trait HasDownload
+{
+    /**
+     * @template TResource of \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|array<array-key, mixed>|object
+     * @param callable(\Laravel\Nova\Http\Requests\NovaRequest, TResource, ?string, ?string):(\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse|\Symfony\Component\HttpFoundation\StreamedResponse) $downloadResponseCallback
+     * @return $this
+     */
+    public function download(callable $downloadResponseCallback) {}
+}

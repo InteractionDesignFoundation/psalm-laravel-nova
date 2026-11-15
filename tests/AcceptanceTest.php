@@ -66,6 +66,11 @@ final class AcceptanceTest extends TestCase
                 ['text' => "static fn(mixed \$value, Post \$resource, int \$attribute): string => 'nope'", 'type' => 'InvalidScalarArgument'],
                 // displayUsing(): same arity check as make().
                 ['text' => "static fn(mixed \$value, Post \$resource, string \$attribute, mixed \$extra): string => 'nope'", 'type' => 'InvalidScalarArgument'],
+                // File callbacks: a nullable download response is a real TypeError, the storage callback's
+                // request must be an Illuminate Request, and the resource must satisfy the bound.
+                ['text' => 'static fn(NovaRequest $request, Post $post, ?string $disk, ?string $value): ?StreamedResponse => null', 'type' => 'InvalidArgument'],
+                ['text' => "static fn(\stdClass \$request, Post \$post, string \$attribute, string \$requestAttribute, ?string \$disk, ?string \$path): string => 'nope'", 'type' => 'InvalidArgument'],
+                ['text' => 'static fn(mixed $value, ?string $disk, int $resource): ?string => null', 'type' => 'InvalidArgument'],
                 // Stack line via $lines is not a valid class-string<Field>|callable|Field either.
                 ['text' => '[new \stdClass()]', 'type' => 'InvalidArgument'],
                 // Tool::canSee() narrowed to NovaRequest would be unsound: Tool can receive a plain Request.

@@ -301,6 +301,9 @@ namespace Laravel\Nova\Lenses {
 
 namespace Laravel\Nova\Contracts {
     interface Resolvable {}
+    interface Deletable {}
+    interface Downloadable {}
+    interface Storable {}
 
     interface Filter
     {
@@ -387,6 +390,50 @@ namespace Laravel\Nova\Fields {
          * @return $this
          */
         public function dependsOnUpdating($attributes, $mixin)
+        {
+            return $this;
+        }
+    }
+
+    trait AcceptsTypes {}
+    trait Deletable {}
+    trait Storable {}
+
+    /** Nova types the download callback's resource as `Model|Fluent|stdClass` and its return type strictly. */
+    trait HasDownload
+    {
+        /**
+         * @param callable(\Laravel\Nova\Http\Requests\NovaRequest, object, ?string, ?string):mixed $downloadResponseCallback
+         *
+         * @phpstan-param callable(\Laravel\Nova\Http\Requests\NovaRequest, \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent|\stdClass, ?string, ?string):(\Illuminate\Http\Response|\Illuminate\Http\RedirectResponse|\Symfony\Component\HttpFoundation\BinaryFileResponse|\Symfony\Component\HttpFoundation\StreamedResponse) $downloadResponseCallback
+         *
+         * @return $this
+         */
+        public function download(callable $downloadResponseCallback)
+        {
+            return $this;
+        }
+    }
+
+    trait HasPreview
+    {
+        /**
+         * @param callable(mixed, ?string, mixed):?string $previewUrlCallback
+         * @return $this
+         */
+        public function preview(callable $previewUrlCallback)
+        {
+            return $this;
+        }
+    }
+
+    trait HasThumbnail
+    {
+        /**
+         * @param callable(mixed, string, mixed):?string $thumbnailUrlCallback
+         * @return $this
+         */
+        public function thumbnail(callable $thumbnailUrlCallback)
         {
             return $this;
         }
@@ -546,5 +593,68 @@ namespace Laravel\Nova\Fields {
          * @param iterable<int, class-string<\Laravel\Nova\Fields\Field>|callable> $lines
          */
         public function __construct($name, mixed $attribute = null, iterable $lines = []) {}
+    }
+
+    class File extends \Laravel\Nova\Fields\Field implements \Laravel\Nova\Contracts\Deletable, \Laravel\Nova\Contracts\Downloadable, \Laravel\Nova\Contracts\Storable
+    {
+        use \Laravel\Nova\Fields\AcceptsTypes;
+        use \Laravel\Nova\Fields\Deletable;
+        use \Laravel\Nova\Fields\HasDownload;
+        use \Laravel\Nova\Fields\HasPreview;
+        use \Laravel\Nova\Fields\HasThumbnail;
+        use \Laravel\Nova\Fields\Storable;
+        use \Laravel\Nova\Fields\SupportsDependentFields;
+
+        /**
+         * @param \Stringable|string $name
+         * @param string|callable|object|null $attribute
+         */
+        public function __construct($name, mixed $attribute = null, ?string $disk = null, ?callable $storageCallback = null) {}
+
+        /**
+         * @param callable(\Illuminate\Http\Request, \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent, string, string, ?string, ?string):mixed $storageCallback
+         * @return $this
+         */
+        public function store(callable $storageCallback)
+        {
+            return $this;
+        }
+
+        /**
+         * @param callable(\Illuminate\Http\Request, \Illuminate\Database\Eloquent\Model|\Laravel\Nova\Support\Fluent, string, string, ?string, ?string):string $storeAsCallback
+         * @return $this
+         */
+        public function storeAs(callable $storeAsCallback)
+        {
+            return $this;
+        }
+
+        /**
+         * @param callable(mixed, string, mixed):?string $thumbnailUrlCallback
+         * @return $this
+         */
+        public function thumbnail(callable $thumbnailUrlCallback)
+        {
+            return $this;
+        }
+
+        /**
+         * @param callable(mixed, ?string, mixed):?string $previewUrlCallback
+         * @return $this
+         */
+        public function preview(callable $previewUrlCallback)
+        {
+            return $this;
+        }
+    }
+
+    class Image extends \Laravel\Nova\Fields\File {}
+
+    /** Unlike `File`, it takes `download()`/`preview()`/`thumbnail()` straight from the traits. */
+    class VaporFile extends \Laravel\Nova\Fields\Field
+    {
+        use \Laravel\Nova\Fields\HasDownload;
+        use \Laravel\Nova\Fields\HasPreview;
+        use \Laravel\Nova\Fields\HasThumbnail;
     }
 }
