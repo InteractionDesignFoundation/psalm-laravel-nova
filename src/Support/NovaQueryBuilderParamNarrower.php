@@ -115,7 +115,7 @@ final class NovaQueryBuilderParamNarrower
             // param would otherwise match below too. An explicit generic is user-declared intent
             // (e.g. a `@param Builder<SomeModel> $query` override) and must not be clobbered —
             // see isGenericBuilderParam().
-            if ($atomic instanceof TGenericObject && \count($atomic->type_params) > 0) {
+            if ($atomic instanceof TGenericObject) {
                 continue;
             }
 
@@ -138,10 +138,7 @@ final class NovaQueryBuilderParamNarrower
         }
 
         foreach ($type->getAtomicTypes() as $atomic) {
-            if ($atomic instanceof TGenericObject
-                && \count($atomic->type_params) > 0
-                && self::isBuilderName($atomic->value)
-            ) {
+            if ($atomic instanceof TGenericObject && self::isBuilderName($atomic->value)) {
                 return true;
             }
         }
