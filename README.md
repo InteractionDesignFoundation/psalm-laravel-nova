@@ -58,7 +58,7 @@ Under `findUnusedCode="true"`, the classes and members Nova reaches by reflectio
 
 Marking rather than suppressing matters since `psalm/psalm-plugin-api` 0.2.0, where suppressing an unused-code issue silences the report for that one symbol only: a private helper called from nothing but a hook would still be reported `UnusedMethod`. A hook shared through a trait is marked on the trait, which is where Psalm reads the flag from. Hook methods that override a base declaration (`fields()`, `apply()`, `calculate()`, …) already inherit the parent's "used" status from the stubs and need nothing here.
 
-Marking the resource class is the one broad step, so it applies only when `findUnusedCode` is on. It also stops Psalm checking that resource's public surface (an unread public property or an uncalled public method goes unreported) and silences `ClassMustBeFinal` for it. The one remaining suppression is `NonInvariantPropertyType` on `$policy`, and only for declarations compatible with the stub's `string`. `public static int $policy` still raises.
+Marking the resource class is the one broad step, so it applies only when `findUnusedCode` is on. It also stops Psalm checking that resource's public surface (an unread public property or an uncalled public method goes unreported) and silences `ClassMustBeFinal` for it. The remaining suppressions are on `$policy`, which the stub declares but the real Nova `Resource` does not: `NonInvariantPropertyType`, only for declarations compatible with the stub's `string` (`public static int $policy` still raises), and `MissingOverrideAttribute`, only when no real ancestor declares `$policy` (PHP rejects `#[\Override]` on a property with no parent declaration).
 
 ### Nova stubs
 

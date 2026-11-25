@@ -147,3 +147,19 @@ final class BrokenActionsAndDependentFields
  * @extends Resource<Post>
  */
 class NonFinalResource extends Resource {}
+
+/**
+ * A real ancestor declares `$policy`, so the redeclaration below is a genuine override and the
+ * plugin must not silence its MissingOverrideAttribute.
+ *
+ * @extends Resource<Post>
+ */
+abstract class PolicyOwningResource extends Resource
+{
+    public static string $policy = \stdClass::class;
+}
+
+final class PolicyRedeclaringResource extends PolicyOwningResource
+{
+    public static string $policy = \stdClass::class;
+}
