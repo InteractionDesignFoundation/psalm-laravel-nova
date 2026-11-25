@@ -101,6 +101,8 @@ final class AcceptanceTest extends TestCase
                 // Marking a resource an entry point silences ClassMustBeFinal, so the plugin only
                 // does it when unused-code analysis is on — which this config's is not.
                 ['text' => 'NonFinalResource', 'type' => 'ClassMustBeFinal'],
+                // A real ancestor declares `$policy`, so the override attribute is required there.
+                ['text' => '$policy', 'type' => 'MissingOverrideAttribute'],
             ],
             array_map(
                 static fn(array $issue): array => ['text' => $issue['selected_text'], 'type' => $issue['type']],

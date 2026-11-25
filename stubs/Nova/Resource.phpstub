@@ -42,6 +42,8 @@ abstract class Resource implements \ArrayAccess, \JsonSerializable, \Illuminate\
      * ! is_null($resource::$policy)`), see Util::resolveResourceOrModelForAuthorization(),
      * Nova::bootResources(), Nova::resourcesForNavigation(). Not declared on the real base
      * class; declared here so subclass declarations are overrides and static fetches resolve.
+     * Because the real class lacks it, the plugin suppresses MissingOverrideAttribute on a subclass
+     * `$policy` that overrides only this declaration: `#[\Override]` there would be a compile error.
      *
      * Typed plain `string` (not `class-string|null`): Psalm requires property types to be
      * invariant, and subclasses conventionally declare the property natively as

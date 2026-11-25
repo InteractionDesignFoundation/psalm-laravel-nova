@@ -6,10 +6,14 @@
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config ../../vendor/vimeo/psalm/config.xsd"
     findUnusedCode="true"
+    phpVersion="8.5"
 >
     <projectFiles>
         <directory name="scenarios-unused"/>
     </projectFiles>
+
+    <!-- phpVersion pinned for the same reason as psalm.xml: PostResource::$policy exercises the
+         MissingOverrideAttribute suppression, which Psalm only checks when analysing PHP 8.5+. -->
 
     <!-- A second config rather than findUnusedCode on the main fixture: unused-code analysis is
          whole-project, so the existing scenarios would have to be kept artificially reachable. -->

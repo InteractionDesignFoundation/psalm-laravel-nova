@@ -24,7 +24,7 @@ use Psalm\Storage\PropertyStorage;
  *
  * Two distinct mechanisms, not interchangeable. Unused-code findings are fixed by marking the symbol an
  * entry point (see markAsEntryPoint), which also keeps whatever the symbol calls alive; everything else
- * — currently only NonInvariantPropertyType on `$policy` — is a per-symbol issue suppression.
+ * — currently NonInvariantPropertyType and MissingOverrideAttribute on `$policy` — is a per-symbol issue suppression.
  *
  * All work happens in afterCodebasePopulated: parent_classes is fully resolved there, and re-reading the
  * AST for the `$policy` bridge stays in the main process (a static map populated during forked scanning
@@ -139,25 +139,41 @@ final class NovaConventionsHandler implements AfterCodebasePopulatedInterface
 
                 self::markResourceRelatableMethodsAsEntryPoints($classStorage, $provider);
 
-                $policyProperty = $classStorage->properties[self::POLICY_PROPERTY] ?? null;
-                if ($policyProperty instanceof PropertyStorage) {
-                    // The stub declares `public static string $policy` on the Nova Resource base
-                    // (see Resource.phpstub). Psalm requires overridden property types to be
-                    // invariant on the NATIVE signature, so a subclass declaring the property
-                    // untyped (`public static $policy = X::class`) or nullable would raise
-                    // NonInvariantPropertyType even though both styles are legitimate (Nova
-                    // reads the property via `property_exists(...) && !is_null(...)`). The
-                    // stub property is our own invention, so the variance check carries no
-                    // signal for those shapes — but ONLY for those: a declaration like
-                    // `public static int $policy` is genuinely wrong and must keep the issue.
-                    if (self::hasStringCompatiblePolicyShape($policyProperty, $classStorage, $codebase)) {
-                        self::suppress('NonInvariantPropertyType', $policyProperty);
-                    }
-
-                    self::markPolicyMethodsAsEntryPoints($classStorage, $codebase);
-                }
+                self::handlePolicyProperty($classStorage, $codebase, $provider);
             }
         }
+    }
+
+    private static function handlePolicyProperty(
+        ClassLikeStorage $classStorage,
+        Codebase $codebase,
+        ClassLikeStorageProvider $provider
+    ): void {
+        $policyProperty = $classStorage->properties[self::POLICY_PROPERTY] ?? null;
+        if (!$policyProperty instanceof PropertyStorage) {
+            return;
+        }
+
+        // The stub declares `public static string $policy` on the Nova Resource base
+        // (see Resource.phpstub). Psalm requires overridden property types to be
+        // invariant on the NATIVE signature, so a subclass declaring the property
+        // untyped (`public static $policy = X::class`) or nullable would raise
+        // NonInvariantPropertyType even though both styles are legitimate (Nova
+        // reads the property via `property_exists(...) && !is_null(...)`). The
+        // stub property is our own invention, so the variance check carries no
+        // signal for those shapes — but ONLY for those: a declaration like
+        // `public static int $policy` is genuinely wrong and must keep the issue.
+        if (self::hasStringCompatiblePolicyShape($policyProperty, $classStorage, $codebase)) {
+            self::suppress('NonInvariantPropertyType', $policyProperty);
+        }
+
+        // `#[\Override]` on a property the real parent lacks is a compile error, so the
+        // attribute belongs only where a real ancestor (e.g. a project base resource) declares `$policy`.
+        if (self::policyOverridesOnlyTheStub($classStorage, $provider)) {
+            self::suppress('MissingOverrideAttribute', $policyProperty);
+        }
+
+        self::markPolicyMethodsAsEntryPoints($classStorage, $codebase);
     }
 
     /**
@@ -186,6 +202,24 @@ final class NovaConventionsHandler implements AfterCodebasePopulatedInterface
         // Untyped and no docblock: trust the declaration only when its initializer is a real
         // `SomePolicy::class` constant (the same AST read used for policy-method suppression).
         return StaticClassPropertyResolver::resolve($classStorage, $codebase, self::POLICY_PROPERTY) !== null;
+    }
+
+    /**
+     * Whether the nearest `$policy` above this resource is the stub's declaration on Nova's base
+     * Resource, which the real class does not have.
+     */
+    private static function policyOverridesOnlyTheStub(
+        ClassLikeStorage $classStorage,
+        ClassLikeStorageProvider $provider
+    ): bool {
+        $parentClass = $classStorage->parent_class;
+        if ($parentClass === null || !$provider->has($parentClass)) {
+            return false;
+        }
+
+        $declaringClass = $provider->get($parentClass)->declaring_property_ids[self::POLICY_PROPERTY] ?? null;
+
+        return $declaringClass !== null && mb_strtolower($declaringClass) === self::NOVA_RESOURCE;
     }
 
     /**
