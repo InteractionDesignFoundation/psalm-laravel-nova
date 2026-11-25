@@ -6,10 +6,14 @@
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config ../../vendor/vimeo/psalm/config.xsd"
     findUnusedCode="false"
+    phpVersion="8.5"
 >
     <projectFiles>
         <directory name="scenarios"/>
     </projectFiles>
+
+    <!-- phpVersion is pinned so results don't depend on the runtime: Psalm checks #[\Override] on
+         properties only when analysing PHP 8.5+. -->
 
     <!-- Fake Nova reaches Psalm only via the composer classmap (autoload-dev), not <stubs>: config
          <stubs> are scanned before a plugin's own addStubFile() stubs and always "win" there, which
